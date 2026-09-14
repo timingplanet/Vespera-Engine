@@ -1,0 +1,23 @@
+vespera_sprite_clip 1
+name "Watcher Walk"
+directions 8
+frames 2
+fps 4.0
+loop 1
+texture "Watcher D0 F0" "textures/watcher_d0_f0.bmp"
+texture "Watcher D0 F1" "textures/watcher_d0_f1.bmp"
+texture "Watcher D1 F0" "textures/watcher_d1_f0.bmp"
+texture "Watcher D1 F1" "textures/watcher_d1_f1.bmp"
+texture "Watcher D2 F0" "textures/watcher_d2_f0.bmp"
+texture "Watcher D2 F1" "textures/watcher_d2_f1.bmp"
+texture "Watcher D3 F0" "textures/watcher_d3_f0.bmp"
+texture "Watcher D3 F1" "textures/watcher_d3_f1.bmp"
+texture "Watcher D4 F0" "textures/watcher_d4_f0.bmp"
+texture "Watcher D4 F1" "textures/watcher_d4_f1.bmp"
+texture "Watcher D5 F0" "textures/watcher_d5_f0.bmp"
+texture "Watcher D5 F1" "textures/watcher_d5_f1.bmp"
+texture "Watcher D6 F0" "textures/watcher_d6_f0.bmp"
+texture "Watcher D6 F1" "textures/watcher_d6_f1.bmp"
+texture "Watcher D7 F0" "textures/watcher_d7_f0.bmp"
+texture "Watcher D7 F1" "textures/watcher_d7_f1.bmp"
+end_sprite_clip

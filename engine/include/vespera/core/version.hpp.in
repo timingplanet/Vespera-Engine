@@ -1,0 +1,13 @@
+#pragma once
+
+#include <string_view>
+
+namespace vespera {
+
+inline constexpr std::string_view kEngineName = "Vespera Engine";
+inline constexpr std::string_view kEngineVersion = "@VESPERA_VERSION_LABEL@";
+inline constexpr int kEngineVersionMajor = @PROJECT_VERSION_MAJOR@;
+inline constexpr int kEngineVersionMinor = @PROJECT_VERSION_MINOR@;
+inline constexpr int kEngineVersionPatch = @PROJECT_VERSION_PATCH@;
+
+} // namespace vespera

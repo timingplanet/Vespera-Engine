@@ -1,0 +1,22 @@
+vespera_project 10
+name "Vespera Performance Lab"
+assets "assets"
+startup_scene_asset "f1500000000000000000000000000001" "scenes/main.slscene"
+startup_ui_asset "f1500000000000000000000000000010" "ui/main.rml"
+company_name "Vespera Engine Samples"
+product_version "1.0.0"
+package_name "VesperaPerformanceLab"
+managed_deployment "framework-dependent"
+managed_project "managed/VesperaPerformanceLab.Scripts.csproj"
+managed_assembly "VesperaPerformanceLab.Scripts"
+executable_name "VesperaPerformanceLab"
+build_output_directory "builds"
+development_diagnostics 1
+window_title "Vespera Performance Lab"
+window_width 1600
+window_height 900
+window_resizable 1
+relative_mouse 0
+escape_quits 1
+vsync 0
+end_project

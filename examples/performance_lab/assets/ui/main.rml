@@ -1,0 +1,45 @@
+<rml>
+<head>
+    <title>Vespera Performance Lab</title>
+    <link type="text/rcss" href="performance.rcss" />
+</head>
+<body>
+<div id="hud">
+    <div id="brand-row">
+        <div><div id="eyebrow">VESPERA ENGINE 1.0.0 · UNCAPPED</div><div id="title">Performance Lab</div></div>
+        <div id="benchmark-state">LIVE · BASELINE FLYTHROUGH</div>
+    </div>
+    <div id="metrics">
+        <div class="metric"><span class="label">FPS</span><span id="live-fps" class="value accent">---</span></div>
+        <div class="metric"><span class="label">FRAME</span><span id="frame-ms" class="value">-- ms</span></div>
+        <div class="metric"><span class="label">AVG</span><span id="avg-fps" class="value">---</span></div>
+        <div class="metric"><span class="label">1% LOW</span><span id="one-low" class="value">---</span></div>
+        <div class="metric"><span class="label">WORST</span><span id="worst-ms" class="value">-- ms</span></div>
+    </div>
+    <div id="load-row">
+        <span>PRESET <b id="preset-name">BASELINE</b></span>
+        <span>OBJECTS <b id="object-count">0</b></span>
+        <span>MOVING <b id="mover-count">0</b></span>
+        <span>LIGHTS <b id="light-count">0</b></span>
+    </div>
+    <div id="telemetry-row">
+        <span>UPDATE <b id="update-ms">-- ms</b></span>
+        <span>RENDER <b id="render-ms">-- ms</b></span>
+        <span>DRAWS <b id="draw-calls">---</b></span>
+        <span>VISIBLE <b id="visible-meshes">---</b></span>
+        <span>CULLED <b id="culled-meshes">---</b></span>
+    </div>
+    <div id="controls-row">
+        <button id="preset-baseline" class="preset selected">Baseline</button>
+        <button id="preset-gameplay" class="preset">Gameplay</button>
+        <button id="preset-heavy" class="preset">Heavy</button>
+        <button id="preset-torture" class="preset danger">Torture</button>
+        <button id="run-benchmark" class="primary">Run Full Benchmark</button>
+        <button id="reset-stats" class="secondary">Reset Stats</button>
+    </div>
+    <div id="progress-track"><div id="progress-fill"></div></div>
+    <div id="result-summary">Autopilot camera is active. Each tier adds thousands of visible objects, animated transforms and moving lights.</div>
+</div>
+<div id="footer-note">Cinematic stress fly-through · uncapped · Torture ≈ 13K renderables / 9K+ animated transforms / 32 moving lights</div>
+</body>
+</rml>

@@ -1,0 +1,66 @@
+* { box-sizing: border-box; }
+
+body {
+    width: 100%; height: 100%; margin: 0px; padding: 0px;
+    font-family: Segoe UI; font-size: 16px; color: #e8dfcf;
+    background-color: #0c1018;
+}
+div { display: block; }
+
+#shell {
+    width: 1050px; max-width: 94%; min-height: 560px;
+    margin: 3% auto 0px auto; display: flex; flex-direction: column;
+    background-color: #151b26; border: 1px #4c566b; border-radius: 14px; overflow: hidden;
+}
+#header {
+    height: 88px; padding: 18px 26px; display: flex; flex-direction: row; align-items: center;
+    background-color: #1d2533; border-bottom: 1px #59647a;
+}
+#brand { flex: 1; }
+#eyebrow { color: #d5ac63; font-size: 12px; letter-spacing: 2px; text-transform: uppercase; }
+#title { color: #fff5dd; font-size: 28px; font-weight: bold; margin-top: 3px; }
+#resources { color: #d9c7a1; font-size: 15px; text-align: right; }
+#body-grid { display: flex; flex-direction: row; min-height: 0px; padding: 18px; }
+.panel { background-color: #111722; border: 1px #394458; border-radius: 10px; padding: 16px; }
+#roster-panel { width: 280px; flex-grow: 0; flex-shrink: 1; margin-right: 14px; }
+#mission-panel { width: 430px; flex-grow: 0; flex-shrink: 1; margin-right: 14px; }
+#detail-panel { width: 270px; flex-grow: 0; flex-shrink: 1; }
+.section-label { color: #92a0b8; font-size: 12px; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 10px; }
+.control-row { display: block; margin-bottom: 8px; }
+.member, .mission {
+    display: block; max-width: 100%; padding: 11px 12px; color: #e7e9ed;
+    background-color: #1a2230; border: 1px #303b50; border-radius: 7px;
+    text-align: left; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.member { width: 220px; }
+.mission { width: 280px; }
+.member:hover, .mission:hover { background-color: #222d3e; border-color: #6d7c96; }
+.member:focus, .mission:focus { border-color: #d5ac63; }
+.member:active, .mission:active { background-color: #2a3547; }
+.member.selected, .mission.selected { border-color: #b58b47; background-color: #2a2a27; }
+#mission-title { color: #fff2d3; font-size: 23px; font-weight: bold; margin-bottom: 5px; }
+#mission-meta { color: #c5b590; margin-bottom: 15px; }
+#mission-description { color: #b7c0ce; line-height: 1.45; margin-bottom: 18px; }
+.divider { height: 1px; background-color: #303a4b; margin: 13px 0px; }
+.stat-title { color: #8796ae; font-size: 12px; margin-bottom: 4px; }
+.stat-value { color: #f3ead7; font-size: 18px; font-weight: bold; margin-bottom: 10px; }
+#progress-track { width: 280px; max-width: 100%; height: 10px; margin-top: 10px; margin-bottom: 8px; background-color: #293142; border-radius: 5px; overflow: hidden; }
+#progress-fill { width: 0%; height: 100%; background-color: #c5964d; }
+.primary, .secondary {
+    display: inline-block; max-width: 100%; padding: 11px 14px; margin-top: 9px;
+    border-radius: 7px; font-size: 15px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.primary { width: 150px; color: #17130c; background-color: #d3a85e; border: 1px #f0cd88; }
+.primary:hover { background-color: #e1b96e; }
+.primary:active { background-color: #bd8e44; }
+.primary:focus { border-color: #fff1c6; }
+.secondary { color: #dde3ed; background-color: #242e3e; border: 1px #45536b; }
+.secondary:hover { background-color: #303c50; }
+.secondary:focus { border-color: #92a9c8; }
+#upgrade { width: 220px; }
+#guild-name { width: 230px; max-width: 100%; height: 36px; padding: 7px 9px; color: #f0e8d9; background-color: #0c121c; border: 1px #3b475b; border-radius: 6px; margin-bottom: 11px; }
+#guild-name:focus { border-color: #d5ac63; }
+#footer { min-height: 84px; padding: 13px 22px; display: flex; flex-direction: row; background-color: #101620; border-top: 1px #303b4c; }
+#event-log { flex: 1; color: #9eaabc; line-height: 1.45; }
+#sample-note { width: 300px; padding-left: 20px; color: #74829a; font-size: 12px; line-height: 1.5; }
+.accent { color: #d5ac63; }

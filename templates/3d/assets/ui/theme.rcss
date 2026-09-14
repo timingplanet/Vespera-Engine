@@ -1,0 +1,5 @@
+body { width: 100%; height: 100%; margin: 0px; font-family: Segoe UI; color: #eef2f7; }
+div { display: block; }
+#hud { position: absolute; left: 24px; top: 24px; padding: 14px 16px; background-color: #0b111ccc; border: 1px #344258; border-radius: 10px; }
+.badge { display: block; color: #e4b15e; font-size: 12px; letter-spacing: 2px; margin-bottom: 5px; }
+.hint { display: block; color: #c4cfdf; font-size: 14px; }

@@ -1,0 +1,57 @@
+<rml>
+<head>
+    <title>Emberlight Guild</title>
+    <link type="text/rcss" href="guild.rcss" />
+</head>
+<body>
+<div id="shell">
+    <div id="header">
+        <div id="brand">
+            <div id="eyebrow">VESPERA SAMPLE GAME</div>
+            <div id="title">The Emberlight Guild</div>
+        </div>
+        <div id="resources">GOLD <span id="gold" class="accent">320</span> &nbsp;&nbsp; RENOWN <span id="renown" class="accent">18</span><br/>GUILD RANK · <span id="rank">BRONZE II</span></div>
+    </div>
+    <div id="body-grid">
+        <div id="roster-panel" class="panel">
+            <div class="section-label">Guild roster</div>
+            <div class="control-row"><button id="member-aldric" class="member selected">Aldric · Vanguard · Lv 4</button></div>
+            <div class="control-row"><button id="member-mira" class="member">Mira · Arcanist · Lv 3</button></div>
+            <div class="control-row"><button id="member-tamsin" class="member">Tamsin · Ranger · Lv 3</button></div>
+            <div class="control-row"><button id="member-oren" class="member">Brother Oren · Healer · Lv 2</button></div>
+            <div class="control-row"><button id="member-nix" class="member">Nix · Scout · Lv 2</button></div>
+        </div>
+        <div id="mission-panel" class="panel">
+            <div class="section-label">Mission board</div>
+            <div id="mission-title">Moonwell Escort</div>
+            <div id="mission-meta">Danger 5 · Reward 70 gold / 12 renown · ~5 seconds</div>
+            <div id="mission-description">Escort a scholar through the old moonwell road. Assign a balanced party, then send the expedition and watch the result return without leaving the management screen.</div>
+            <div class="section-label">Available contracts</div>
+            <div class="control-row"><button id="mission-tollhouse" class="mission">Goblin Tollhouse · Danger 3 · 45g</button></div>
+            <div class="control-row"><button id="mission-moonwell" class="mission selected">Moonwell Escort · Danger 5 · 70g</button></div>
+            <div class="control-row"><button id="mission-crypt" class="mission">Crypt of Whispers · Danger 7 · 110g</button></div>
+            <div id="progress-track"><div id="progress-fill"></div></div>
+            <div id="mission-status">Ready to assign a party.</div>
+            <button id="start-mission" class="primary">Start Expedition</button>
+        </div>
+        <div id="detail-panel" class="panel">
+            <div class="section-label">Selected adventurer</div>
+            <div id="member-role" class="stat-title">ALDRIC · VANGUARD</div>
+            <div id="member-state" class="stat-value">READY · LEVEL 4</div>
+            <div class="divider"></div>
+            <div class="stat-title">MIGHT</div><div id="stat-might" class="stat-value">8</div>
+            <div class="stat-title">WIT</div><div id="stat-wit" class="stat-value">3</div>
+            <div class="stat-title">SPIRIT</div><div id="stat-spirit" class="stat-value">5</div>
+            <div class="divider"></div>
+            <div class="section-label">Guild name</div>
+            <input id="guild-name" type="text" value="Emberlight Guild" maxlength="32" />
+            <button id="upgrade" class="secondary">Upgrade War Room · 100g</button>
+        </div>
+    </div>
+    <div id="footer">
+        <div id="event-log"><span class="accent">RECENT EVENTS</span><br/>The guild hall is ready. Select a contract and begin an expedition.</div>
+        <div id="sample-note">Project-owned C# · RmlUi/RCSS · SaveData persistence<br/>Built through the same shared-player/export path as a normal Vespera game.</div>
+    </div>
+</div>
+</body>
+</rml>

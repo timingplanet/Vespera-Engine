@@ -1,0 +1,11 @@
+sectorline_scene 15
+# Emberlight Guild is deliberately UI-heavy dogfood. The scene owns only the
+# project C# bootstrap; the game presentation is authored in RML/RCSS.
+camera 0 1.65 -4 0 0 75 0.05 500
+entity 1001 1 "Guild Game"
+  identity "guild-game" "Gameplay"
+  transform 0 0 0 0 0 0 1 1 1
+  managed_script "EmberlightGuild.GuildGame" 1
+  end_managed_script
+endentity
+end

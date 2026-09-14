@@ -1,0 +1,31 @@
+sectorline_scene 15
+# 3D / 2.5D starter room with one project-owned C# controlled actor.
+camera 0 1.65 -4 0 0 75 0.05 500
+material "Starter Floor" 0.38 0.43 0.52 1.0 "-" 1.0 1.0
+material "Starter Ceiling" 0.18 0.21 0.28 1.0 "-" 1.0 1.0
+material "Starter Wall" 0.31 0.36 0.45 1.0 "-" 1.0 1.0
+sector "Starter Room" 0.0 3.6 "Starter Floor" "Starter Ceiling" "Starter Wall"
+  vertex -5 -5
+  vertex 5 -5
+  vertex 5 5
+  vertex -5 5
+  side "Starter Wall" -1
+  side "Starter Wall" -1
+  side "Starter Wall" -1
+  side "Starter Wall" -1
+endsector
+entity 1001 1 "Key Light"
+  identity "light" "Lighting"
+  transform 0 2.6 0 0 0 0 1 1 1
+  point_light 1.00 0.78 0.52 1.0 1.6 7.0
+endentity
+entity 1002 1 "Starter Player"
+  identity "player" "Gameplay"
+  transform 0 0.55 0 0 0 0 0.85 0.85 0.85
+  mesh_renderer "cube" "-" 0.22 0.55 1.00 1.0
+  cylinder_collider 0.45 1.10 0 0 0 0
+  managed_script "VesperaGame.StarterController" 1
+    managed_field "MoveSpeed" "float" "3"
+  end_managed_script
+endentity
+end

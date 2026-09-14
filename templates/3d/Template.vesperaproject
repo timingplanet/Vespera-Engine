@@ -1,0 +1,27 @@
+vespera_project 10
+name "Vespera 3D Game"
+assets "assets"
+startup_scene_asset "98000000000000000000000000000003" "scenes/main.slscene"
+startup_ui_asset "98000000000000000000000000000022" "ui/main.rml"
+company_name ""
+product_version "0.1.0"
+package_name "Vespera3DGame"
+managed_deployment "framework-dependent"
+managed_project "managed/VesperaGame.Scripts.csproj"
+managed_assembly "VesperaGame.Scripts"
+executable_name "Vespera3DGame"
+build_output_directory "builds"
+development_diagnostics 1
+window_title "Vespera 3D / 2.5D Game"
+window_width 1280
+window_height 720
+window_resizable 1
+relative_mouse 1
+escape_quits 1
+vsync 1
+input_bind "move_forward" "key" "W" 1.0 0.0
+input_bind "move_forward" "key" "S" -1.0 0.0
+input_bind "move_right" "key" "D" 1.0 0.0
+input_bind "move_right" "key" "A" -1.0 0.0
+input_bind "sprint" "key" "LeftShift" 1.0 0.0
+end_project

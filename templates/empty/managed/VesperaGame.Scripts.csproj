@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework Condition="'$(VesperaTargetFramework)' == ''">net8.0</TargetFramework>
+    <TargetFramework Condition="'$(VesperaTargetFramework)' != ''">$(VesperaTargetFramework)</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <AssemblyName>VesperaGame.Scripts</AssemblyName>
+    <RootNamespace>VesperaGame</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(VesperaSdkProject)" Condition="'$(VesperaSdkProject)' != ''" />
+  </ItemGroup>
+  <Target Name="ValidateVesperaSdkProject" BeforeTargets="ResolveReferences">
+    <Error Condition="'$(VesperaSdkProject)' == ''" Text="VesperaSdkProject was not supplied. Build this project through the Vespera Editor, run-project.ps1, or export.ps1." />
+    <Error Condition="'$(VesperaSdkProject)' != '' and !Exists('$(VesperaSdkProject)')" Text="Vespera.NET project was not found at '$(VesperaSdkProject)'. Launch/build through the matching Vespera checkout." />
+  </Target>
+</Project>

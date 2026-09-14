@@ -1,0 +1,9 @@
+vespera_audio_clip 2
+name "Reference Chime"
+source_asset "421c432b92520be0ef3890880ce929e4" "audio/test_chime.wav"
+volume 0.85
+loop 0
+spatial 0
+min_distance 1.0
+max_distance 18.0
+end_audio_clip

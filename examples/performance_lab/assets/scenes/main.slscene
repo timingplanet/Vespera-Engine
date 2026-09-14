@@ -1,0 +1,24 @@
+sectorline_scene 15
+# Vespera 1.0.0 Performance Lab cinematic stress scene.
+# The runtime C# controller builds the dense benchmark field through public APIs.
+camera 0 5.2 -15 0 0.05 74 0.04 650
+material "Lab Floor" 0.035 0.050 0.080 1.0 "-" 1.0 1.0
+material "Lab Ceiling" 0.018 0.024 0.042 1.0 "-" 1.0 1.0
+material "Lab Wall" 0.055 0.080 0.125 1.0 "-" 1.0 1.0
+sector "Performance Gallery" 0.0 24.0 "Lab Floor" "Lab Ceiling" "Lab Wall"
+  vertex -26 -24
+  vertex 26 -24
+  vertex 26 225
+  vertex -26 225
+  side "Lab Wall" -1
+  side "Lab Wall" -1
+  side "Lab Wall" -1
+  side "Lab Wall" -1
+endsector
+entity 1000 1 "Performance Lab Controller"
+  identity "benchmark-controller" "BenchSystem"
+  transform 0 0 0 0 0 0 1 1 1
+  managed_script "VesperaPerformanceLab.PerformanceLabController" 1
+  end_managed_script
+endentity
+end

@@ -1,0 +1,341 @@
+<rml>
+<head>
+    <title>Vespera RmlUi Showcase</title>
+    <style>
+        * { box-sizing: border-box; }
+
+        body {
+            width: 100%;
+            height: 100%;
+            margin: 0px;
+            padding: 0px;
+            font-family: Segoe UI;
+            font-size: 16px;
+            color: #e8dfcf;
+            background-color: #0c1018;
+        }
+
+        /* RmlUi does not apply browser-default block semantics to every div.
+           Be explicit so text groups never collapse onto the same line. */
+        div { display: block; }
+
+        #shell {
+            width: 1050px;
+            max-width: 94%;
+            min-height: 560px;
+            margin: 3% auto 0px auto;
+            display: flex;
+            flex-direction: column;
+            background-color: #151b26;
+            border: 1px #4c566b;
+            border-radius: 14px;
+            overflow: hidden;
+        }
+
+        #header {
+            height: 88px;
+            padding: 18px 26px;
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            background-color: #1d2533;
+            border-bottom: 1px #59647a;
+        }
+
+        #brand {
+            flex: 1;
+        }
+
+        #eyebrow {
+            color: #d5ac63;
+            font-size: 12px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        #title {
+            color: #fff5dd;
+            font-size: 28px;
+            font-weight: bold;
+            margin-top: 3px;
+        }
+
+        #resources {
+            color: #d9c7a1;
+            font-size: 15px;
+            text-align: right;
+        }
+
+        #body-grid {
+            display: flex;
+            flex-direction: row;
+            min-height: 0px;
+            padding: 18px;
+        }
+
+        .panel {
+            background-color: #111722;
+            border: 1px #394458;
+            border-radius: 10px;
+            padding: 16px;
+        }
+
+        #roster-panel {
+            width: 280px;
+            flex-grow: 0;
+            flex-shrink: 1;
+            margin-right: 14px;
+        }
+
+        #mission-panel {
+            width: 430px;
+            flex-grow: 0;
+            flex-shrink: 1;
+            margin-right: 14px;
+        }
+
+        #detail-panel {
+            width: 270px;
+            flex-grow: 0;
+            flex-shrink: 1;
+        }
+
+        .section-label {
+            color: #92a0b8;
+            font-size: 12px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+
+        .control-row {
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        .member, .mission {
+            display: block;
+            max-width: 100%;
+            padding: 11px 12px;
+            color: #e7e9ed;
+            background-color: #1a2230;
+            border: 1px #303b50;
+            border-radius: 7px;
+            text-align: left;
+            font-size: 14px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            transition: background-color 0.12s, border-color 0.12s;
+        }
+
+        .member { width: 220px; }
+        .mission { width: 280px; }
+
+        .member:hover, .mission:hover {
+            background-color: #222d3e;
+            border-color: #6d7c96;
+        }
+
+        .member:focus, .mission:focus {
+            border-color: #d5ac63;
+        }
+
+        .member:active, .mission:active {
+            background-color: #2a3547;
+        }
+
+        #selected-member, #selected-mission {
+            border-color: #b58b47;
+            background-color: #2a2a27;
+        }
+
+        #mission-title {
+            color: #fff2d3;
+            font-size: 23px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        #mission-meta {
+            color: #c5b590;
+            margin-bottom: 15px;
+        }
+
+        #mission-description {
+            color: #b7c0ce;
+            line-height: 1.45;
+            margin-bottom: 18px;
+        }
+
+        .divider {
+            height: 1px;
+            background-color: #303a4b;
+            margin: 13px 0px;
+        }
+
+        .stat-title {
+            color: #8796ae;
+            font-size: 12px;
+            margin-bottom: 4px;
+        }
+
+        .stat-value {
+            color: #f3ead7;
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        #progress-track {
+            width: 280px;
+            max-width: 100%;
+            height: 10px;
+            margin-top: 10px;
+            margin-bottom: 8px;
+            background-color: #293142;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+
+        #progress-fill {
+            width: 0%;
+            height: 100%;
+            background-color: #c5964d;
+        }
+
+        .primary, .secondary {
+            display: inline-block;
+            max-width: 100%;
+            padding: 11px 14px;
+            margin-top: 9px;
+            border-radius: 7px;
+            font-size: 15px;
+            font-weight: bold;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .primary {
+            width: 150px;
+            color: #17130c;
+            background-color: #d3a85e;
+            border: 1px #f0cd88;
+        }
+
+        .primary:hover { background-color: #e1b96e; }
+        .primary:active { background-color: #bd8e44; }
+        .primary:focus { border-color: #fff1c6; }
+
+        .secondary {
+            color: #dde3ed;
+            background-color: #242e3e;
+            border: 1px #45536b;
+        }
+
+        .secondary:hover { background-color: #303c50; }
+        .secondary:focus { border-color: #92a9c8; }
+        #upgrade { width: 220px; }
+
+        #guild-name {
+            width: 230px;
+            max-width: 100%;
+            box-sizing: border-box;
+            height: 36px;
+            padding: 7px 9px;
+            color: #f0e8d9;
+            background-color: #0c121c;
+            border: 1px #3b475b;
+            border-radius: 6px;
+            margin-bottom: 11px;
+        }
+
+        #guild-name:focus {
+            border-color: #d5ac63;
+        }
+
+        #footer {
+            min-height: 84px;
+            padding: 13px 22px;
+            display: flex;
+            flex-direction: row;
+            background-color: #101620;
+            border-top: 1px #303b4c;
+        }
+
+        #event-log {
+            flex: 1;
+            color: #9eaabc;
+            line-height: 1.45;
+        }
+
+        #evaluation {
+            width: 300px;
+            padding-left: 20px;
+            color: #74829a;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        .accent { color: #d5ac63; }
+    </style>
+</head>
+<body>
+    <div id="shell">
+        <div id="header">
+            <div id="brand">
+                <div id="eyebrow">Vespera Engine · RmlUi 6.2 Showcase</div>
+                <div id="title">The Emberlight Guild</div>
+            </div>
+            <div id="resources">GOLD <span class="accent">320</span> &nbsp;&nbsp; RENOWN <span class="accent">18</span><br/>GUILD RANK · BRONZE II</div>
+        </div>
+
+        <div id="body-grid">
+            <div id="roster-panel" class="panel">
+                <div class="section-label">Guild roster</div>
+                <div class="control-row"><button id="selected-member" class="member">Aldric · Vanguard · Lv 4</button></div>
+                <div class="control-row"><button id="member-mira" class="member">Mira · Arcanist · Lv 3</button></div>
+                <div class="control-row"><button id="member-tamsin" class="member">Tamsin · Ranger · Lv 3</button></div>
+                <div class="control-row"><button id="member-oren" class="member">Brother Oren · Healer · Lv 2</button></div>
+                <div class="control-row"><button id="member-nix" class="member">Nix · Scout · Lv 2</button></div>
+            </div>
+
+            <div id="mission-panel" class="panel">
+                <div class="section-label">Mission board</div>
+                <div id="mission-title">Moonwell Escort</div>
+                <div id="mission-meta">Danger 5 · Reward 70 gold / 12 renown · ~5 seconds</div>
+                <div id="mission-description">Escort a scholar through the old moonwell road. Assign a balanced party, then send the expedition and watch the result return without leaving the management screen.</div>
+
+                <div class="section-label">Available contracts</div>
+                <div class="control-row"><button id="mission-tollhouse" class="mission">Goblin Tollhouse · Danger 3 · 45g</button></div>
+                <div class="control-row"><button id="selected-mission" class="mission">Moonwell Escort · Danger 5 · 70g</button></div>
+                <div class="control-row"><button id="mission-crypt" class="mission">Crypt of Whispers · Danger 7 · 110g</button></div>
+
+                <div id="progress-track"><div id="progress-fill"></div></div>
+                <div id="mission-status">Ready to assign a party.</div>
+                <button id="start-mission" class="primary">Start Expedition</button>
+            </div>
+
+            <div id="detail-panel" class="panel">
+                <div class="section-label">Selected adventurer</div>
+                <div class="stat-title">ALDRIC · VANGUARD</div>
+                <div class="stat-value">READY · LEVEL 4</div>
+                <div class="divider"></div>
+                <div class="stat-title">MIGHT</div><div class="stat-value">8</div>
+                <div class="stat-title">WIT</div><div class="stat-value">3</div>
+                <div class="stat-title">SPIRIT</div><div class="stat-value">5</div>
+                <div class="divider"></div>
+                <div class="section-label">Guild name</div>
+                <input id="guild-name" type="text" value="Emberlight Guild" maxlength="32" />
+                <button id="upgrade" class="secondary">Upgrade War Room · 100g</button>
+            </div>
+        </div>
+
+        <div id="footer">
+            <div id="event-log"><span class="accent">RECENT EVENTS</span><br/>The guild hall is ready. Select a contract and begin an expedition.</div>
+            <div id="evaluation">TAB navigates · ENTER activates · mouse works · TextInput is native RmlUi<br/>Production-foundation showcase kept separate from the legacy reference HUD while migration is in progress.</div>
+        </div>
+    </div>
+</body>
+</rml>

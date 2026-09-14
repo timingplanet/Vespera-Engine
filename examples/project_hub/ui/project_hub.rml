@@ -1,0 +1,89 @@
+<rml>
+<head>
+    <title>Vespera Project Hub</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { width: 100%; height: 100%; margin: 0px; padding: 0px; font-family: Segoe UI; font-size: 15px; color: #edf2fa; background-color: #090d14; }
+        div { display: block; }
+        button, input { font-family: Segoe UI; box-sizing: border-box; }
+        #app { width: 100%; height: 100%; display: flex; flex-direction: column; }
+        #topbar { height: 76px; padding: 18px 28px; display: flex; flex-direction: row; align-items: center; background-color: #121a27; border-bottom: 1px #26344a; }
+        #brand { flex: 1; display: block; }
+        #brand-title { display: block; color: #ffffff; font-size: 24px; font-weight: bold; margin-bottom: 2px; }
+        #engine-version { display: block; color: #77879f; font-size: 12px; letter-spacing: 1px; }
+        #content { flex: 1; min-height: 0px; width: 1070px; max-width: 100%; margin: 0px auto; display: flex; flex-direction: row; align-items: flex-start; padding: 22px 26px 20px 26px; }
+        .panel { background-color: #101722; border: 1px #29364a; border-radius: 12px; }
+        #recent-panel { width: 300px; flex-grow: 0; flex-shrink: 1; padding: 18px; margin-right: 18px; }
+        #new-panel { width: 680px; max-width: 100%; flex-grow: 0; flex-shrink: 1; padding: 20px; }
+        .panel-title { display: block; color: #ffffff; font-size: 19px; font-weight: bold; margin-bottom: 4px; }
+        .panel-copy { display: block; color: #8290a5; font-size: 13px; margin-bottom: 17px; line-height: 1.4; }
+        .recent { display: block; width: 100%; min-height: 58px; padding: 10px 12px; margin-bottom: 8px; text-align: left; color: #dce5f2; background-color: #172130; border: 1px #2d3b51; border-radius: 8px; font-size: 13px; line-height: 1.3; }
+        .recent:hover { background-color: #1d2a3d; border-color: #4f6789; }
+        .recent:focus { border-color: #72aaff; }
+        #recent-empty { display: block; padding: 18px; color: #697990; background-color: #0c121c; border: 1px #202c3e; border-radius: 8px; }
+        .template-row { display: flex; flex-direction: row; width: 620px; max-width: 100%; margin-bottom: 14px; }
+        .template { display: block; width: 200px; max-width: 100%; flex-grow: 0; flex-shrink: 1; min-height: 122px; padding: 16px; margin-right: 10px; text-align: left; color: #dce5f2; background-color: #141e2c; border: 1px #304057; border-radius: 10px; font-size: 15px; }
+        #template-empty { margin-right: 0px; }
+        .template:hover { background-color: #1a2638; border-color: #58759d; }
+        .template:focus { border-color: #72aaff; }
+        .template.selected { background-color: #1c2b41; border: 2px #6fa9ff; color: #ffffff; }
+        .template-title { display: block; color: #ffffff; font-size: 16px; font-weight: bold; margin-bottom: 9px; }
+        .template-copy { display: block; color: #8fa0b6; font-size: 12px; line-height: 1.4; }
+        .template.selected .template-copy { color: #b9cbea; }
+        #template-summary { display: block; min-height: 34px; color: #9cacbf; line-height: 1.4; margin-bottom: 13px; }
+        .field-label { display: block; color: #8f9eb3; font-size: 12px; letter-spacing: 1px; margin-top: 10px; margin-bottom: 5px; }
+        .field { display: block; width: 520px; max-width: 100%; height: 39px; padding: 8px 10px; color: #edf3fb; background-color: #0a1019; border: 1px #35465f; border-radius: 7px; }
+        .field:focus { border-color: #6fa9ff; }
+        .primary { display: inline-block; width: auto; padding: 11px 16px; margin-top: 16px; color: #07101d; background-color: #72aaff; border: 1px #a7caff; border-radius: 8px; font-weight: bold; }
+        .primary:hover { background-color: #8cbbff; }
+        .primary:focus { border-color: #d3e5ff; }
+        .secondary { display: inline-block; width: auto; padding: 9px 14px; margin-top: 8px; color: #dce5f2; background-color: #1b2636; border: 1px #354760; border-radius: 8px; }
+        .secondary:hover { background-color: #243248; }
+        .secondary:focus { border-color: #72aaff; }
+        #status { height: 28px; padding: 8px 28px 10px 28px; color: #7f91aa; background-color: #0c121b; border-top: 1px #1f2a3a; font-size: 13px; }
+        #status.error { color: #ff8f9b; }
+        .accent { color: #72aaff; }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div id="topbar">
+            <div id="brand">
+                <div id="brand-title">Vespera <span class="accent">Project Hub</span></div>
+                <div id="engine-version">Vespera Engine</div>
+            </div>
+        </div>
+        <div id="content">
+            <div id="recent-panel" class="panel">
+                <div class="panel-title">Recent Projects</div>
+                <div class="panel-copy">Jump back into a project without hunting through the reference-game checkout.</div>
+                <button id="recent-1" class="recent">Recent Project 1</button>
+                <button id="recent-2" class="recent">Recent Project 2</button>
+                <button id="recent-3" class="recent">Recent Project 3</button>
+                <button id="recent-4" class="recent">Recent Project 4</button>
+                <button id="recent-5" class="recent">Recent Project 5</button>
+                <div id="recent-empty">No recent projects yet. Create one on the right.</div>
+                <div class="field-label">OPEN EXISTING PROJECT</div>
+                <input id="open-path" class="field" type="text" value="" />
+                <button id="open-project" class="secondary">Open .vesperaproject</button>
+            </div>
+            <div id="new-panel" class="panel">
+                <div class="panel-title">New Project</div>
+                <div class="panel-copy">Choose a clean starter. Templates deliberately avoid the engine QA/reference-game baggage.</div>
+                <div class="template-row">
+                    <button id="template-2d" class="template"><span class="template-title">2D / UI FOUNDATION</span><span class="template-copy">Experimental playable screen-space 2D starter built with project C# + RmlUi. Dedicated orthographic world tooling is post-1.0.</span></button>
+                    <button id="template-3d" class="template"><span class="template-title">3D / 2.5D GAME</span><span class="template-copy">Sector-world room, movement controls, and starter lighting.</span></button>
+                    <button id="template-empty" class="template"><span class="template-title">EMPTY PROJECT</span><span class="template-copy">Minimal valid project and scene with no gameplay assumptions.</span></button>
+                </div>
+                <div id="template-summary">Choose a template.</div>
+                <div class="field-label">PROJECT NAME</div>
+                <input id="project-name" class="field" type="text" value="My Vespera Game" maxlength="64" />
+                <div class="field-label">PROJECTS FOLDER</div>
+                <input id="project-location" class="field" type="text" value="" />
+                <button id="create-project" class="primary">Create Project</button>
+            </div>
+        </div>
+        <div id="status">Ready.</div>
+    </div>
+</body>
+</rml>

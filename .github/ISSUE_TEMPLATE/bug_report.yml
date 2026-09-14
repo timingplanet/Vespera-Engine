@@ -1,0 +1,50 @@
+name: Bug report
+description: Report a reproducible Vespera Engine defect
+title: "[Bug] "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve Vespera. Please include the smallest reliable reproduction you can.
+  - type: input
+    id: version
+    attributes:
+      label: Vespera version
+      placeholder: "1.0.0"
+    validations:
+      required: true
+  - type: input
+    id: windows
+    attributes:
+      label: Windows version
+      placeholder: "Windows 11 24H2"
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Include project/template, actions, and whether the issue survives save/reopen or Play/Stop.
+      placeholder: |
+        1. Create a 3D project
+        2. ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Logs / screenshots / minimal project
+      description: Runtime logs are normally written under %LOCALAPPDATA%\Vespera\Logs.

@@ -1,0 +1,8 @@
+vespera_material 1
+name "Neon Unlit"
+shader "Vespera/Unlit"
+base_texture_asset "dd435bb0842cdf8539a8525345db6a7c" "textures/metal_panels.bmp"
+base_color 0.18 0.75 1.0 1.0
+emission 0.10 0.55 1.0 0.85
+alpha_cutoff 0.5
+end

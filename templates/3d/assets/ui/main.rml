@@ -1,0 +1,12 @@
+<rml>
+<head>
+    <title>Vespera 3D Starter HUD</title>
+    <link type="text/rcss" href="theme.rcss" />
+</head>
+<body>
+    <div id="hud">
+        <div class="badge">VESPERA</div>
+        <div id="starter-hint" class="hint">Starting project C#...</div>
+    </div>
+</body>
+</rml>

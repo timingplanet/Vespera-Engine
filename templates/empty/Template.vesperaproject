@@ -1,0 +1,21 @@
+vespera_project 10
+name "Empty Vespera Project"
+assets "assets"
+startup_scene_asset "98000000000000000000000000000001" "scenes/main.slscene"
+company_name ""
+product_version "0.1.0"
+package_name "VesperaProject"
+managed_deployment "framework-dependent"
+managed_project "managed/VesperaGame.Scripts.csproj"
+managed_assembly "VesperaGame.Scripts"
+executable_name "VesperaProject"
+build_output_directory "builds"
+development_diagnostics 1
+window_title "Vespera Project"
+window_width 1280
+window_height 720
+window_resizable 1
+relative_mouse 0
+escape_quits 1
+vsync 1
+end_project

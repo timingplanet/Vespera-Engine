@@ -1,0 +1,33 @@
+* { box-sizing: border-box; }
+body { width: 100%; height: 100%; margin: 0px; padding: 0px; font-family: Segoe UI; color: #eaf2ff; background-color: transparent; }
+div { display: block; }
+#hud { width: 860px; margin: 18px; padding: 13px 15px; background-color: #08111f; border: 1px #2b4c72; border-radius: 10px; }
+#brand-row { display: flex; flex-direction: row; align-items: center; margin-bottom: 9px; }
+#brand-row > div:first-child { flex: 1; }
+#eyebrow { color: #51a7ff; font-size: 10px; letter-spacing: 2px; }
+#title { font-size: 22px; font-weight: bold; color: #f7fbff; margin-top: 1px; }
+#benchmark-state { color: #95abc1; font-size: 11px; text-align: right; }
+#metrics { display: flex; flex-direction: row; margin-bottom: 8px; }
+.metric { width: 118px; margin-right: 6px; padding: 7px 8px; background-color: #101d30; border: 1px #243d5b; border-radius: 7px; }
+.label { display: block; color: #7f9bb7; font-size: 9px; letter-spacing: 1px; }
+.value { display: block; margin-top: 2px; color: #e9f4ff; font-size: 16px; font-weight: bold; }
+.accent { color: #55bcff; }
+#load-row { padding: 7px 9px; background-color: #0d1828; border-radius: 6px; color: #8fa7bf; font-size: 10px; }
+#load-row span { margin-right: 16px; }
+#load-row b { color: #f0f7ff; }
+#telemetry-row { margin-top: 5px; padding: 6px 9px; background-color: #091522; border: 1px #203750; border-radius: 6px; color: #7995b2; font-size: 9px; }
+#telemetry-row span { margin-right: 16px; }
+#telemetry-row b { color: #d9eaff; }
+#controls-row { margin-top: 8px; white-space: nowrap; }
+button { display: inline-block; padding: 7px 10px; margin-right: 5px; border-radius: 6px; font-size: 11px; font-weight: bold; white-space: nowrap; }
+.preset { width: 82px; color: #bed0e5; background-color: #16243a; border: 1px #2b4667; }
+.preset:hover { background-color: #1d3150; }
+.preset.selected { color: #07111e; background-color: #54aef5; border-color: #83c8ff; }
+.preset.danger.selected { background-color: #f25b7b; border-color: #ff9aae; }
+.primary { width: 142px; color: #06131f; background-color: #62c8ff; border: 1px #9addff; }
+.secondary { width: 92px; color: #dceaff; background-color: #17283f; border: 1px #385879; }
+button:disabled { opacity: 0.55; }
+#progress-track { width: 100%; height: 7px; margin-top: 8px; background-color: #15253a; border-radius: 4px; overflow: hidden; }
+#progress-fill { width: 0%; height: 100%; background-color: #64d6a5; }
+#result-summary { margin-top: 7px; color: #9bb0c5; font-size: 10px; line-height: 1.35; }
+#footer-note { position: absolute; right: 18px; bottom: 14px; padding: 6px 9px; color: #9bb1c8; font-size: 10px; background-color: #07101b; border: 1px #263d57; border-radius: 6px; }

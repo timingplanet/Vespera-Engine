@@ -1,0 +1,9 @@
+sectorline_prefab 1
+# Reusable single-entity prefab used by the reference game and editor prefab workflow.
+name "Watcher"
+enabled 1
+identity "enemy" "Actors"
+transform 0 0 0 0 3.14159265 0 1 1 1
+sprite_renderer 1.65 2.10 "Test Sprite" "Watcher Walk" 0.75 0.18 0 1.00 0.76 0.88 1.0
+cylinder_collider 0.48 2.10 0 1.05 0 0
+end_prefab

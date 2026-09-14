@@ -1,0 +1,8 @@
+vespera_material 1
+name "Concrete Lit"
+shader "Vespera/Lit"
+base_texture_asset "2782602e2947ec40919feeaf3fa442c5" "textures/concrete_brick.bmp"
+base_color 0.92 0.96 1.0 1.0
+emission 1.0 1.0 1.0 0.0
+alpha_cutoff 0.5
+end

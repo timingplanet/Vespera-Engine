@@ -1,0 +1,103 @@
+body {
+    width: 100%; height: 100%; margin: 0px;
+    font-family: Segoe UI;
+    color: #edf4ff;
+    background-color: #080d15;
+}
+div { display: block; }
+#root {
+    width: 100%; height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+#header {
+    width: 720px;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: 12px;
+}
+.eyebrow { color: #75aef7; font-size: 11px; letter-spacing: 2px; margin-bottom: 4px; }
+.title { color: #ffffff; font-size: 24px; font-weight: bold; }
+#score {
+    color: #f5c45b;
+    font-size: 18px;
+    font-weight: bold;
+    padding: 8px 12px;
+    background-color: #151d29;
+    border: 1px #34455d;
+    border-radius: 8px;
+}
+#playfield {
+    position: relative;
+    width: 720px;
+    height: 405px;
+    overflow: hidden;
+    background-color: #101927;
+    border: 2px #344b68;
+    border-radius: 12px;
+}
+.grid-line { position: absolute; background-color: #1b2a3d; }
+.grid-v1 { left: 180px; top: 0px; width: 1px; height: 405px; }
+.grid-v2 { left: 360px; top: 0px; width: 1px; height: 405px; }
+.grid-v3 { left: 540px; top: 0px; width: 1px; height: 405px; }
+.grid-h1 { left: 0px; top: 135px; width: 720px; height: 1px; }
+.grid-h2 { left: 0px; top: 270px; width: 720px; height: 1px; }
+#player {
+    position: absolute;
+    left: 337px;
+    top: 179px;
+    width: 46px;
+    height: 46px;
+    background-color: #4f9cff;
+    border: 2px #a8d0ff;
+    border-radius: 8px;
+}
+#player-core {
+    width: 14px;
+    height: 14px;
+    margin-left: 14px;
+    margin-top: 14px;
+    background-color: #eef7ff;
+    border-radius: 4px;
+}
+#goal {
+    position: absolute;
+    left: 585px;
+    top: 82px;
+    width: 30px;
+    height: 30px;
+    background-color: #f5c45b;
+    border: 2px #fff0b3;
+    border-radius: 15px;
+}
+#footer {
+    width: 720px;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 12px;
+}
+#starter-status { color: #d5deeb; font-size: 14px; margin-bottom: 3px; }
+.note { color: #8292a8; font-size: 12px; }
+#reset {
+    width: 92px;
+    padding: 9px 12px;
+    color: #eef4ff;
+    background-color: #1a2637;
+    border: 1px #425975;
+    border-radius: 7px;
+    font-weight: bold;
+}
+#reset:hover { background-color: #24354b; }
+.scope-note {
+    width: 720px;
+    margin-top: 10px;
+    color: #68798f;
+    font-size: 11px;
+    line-height: 1.35;
+}

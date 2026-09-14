@@ -1,0 +1,20 @@
+name: Feature request
+description: Suggest an improvement or post-1.0 capability
+title: "[Feature] "
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or workflow friction
+      description: Describe the developer problem before proposing the implementation.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed direction
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered

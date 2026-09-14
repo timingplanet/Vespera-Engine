@@ -1,0 +1,11 @@
+sectorline_scene 15
+# Empty Vespera starter scene. The invisible Game Root only provides a clean
+# project-owned C# bootstrap; it adds no rendering or gameplay assumptions.
+camera 0 1.65 -4 0 0 75 0.05 500
+entity 1001 1 "Game Root"
+  identity "game-root" "Gameplay"
+  transform 0 0 0 0 0 0 1 1 1
+  managed_script "VesperaGame.Game" 1
+  end_managed_script
+endentity
+end

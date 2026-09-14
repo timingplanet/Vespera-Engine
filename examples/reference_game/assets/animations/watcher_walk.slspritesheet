@@ -1,0 +1,11 @@
+vespera_sprite_sheet 2
+name "Watcher Walk"
+source_asset "986a8c6925f24a335731edcd24232b61" "textures/watcher_sheet.bmp"
+frame_size 64 64
+directions 8
+frames 2
+fps 4.0
+loop 1
+margin 0 0
+spacing 0 0
+end_sprite_sheet

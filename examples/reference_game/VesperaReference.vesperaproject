@@ -1,0 +1,46 @@
+vespera_project 10
+name "Vespera Reference Game"
+assets "assets"
+startup_scene_asset "6f0cf9d1daf63e7f10485c6f60ffd428" "scenes/connected_sectors.slscene"
+lua_entry_asset "0a100000000000000000000000000001" "scripts/reference.lua"
+managed_project "managed/ReferenceGame.Scripts.csproj"
+managed_assembly "ReferenceGame.Scripts"
+game_target "vespera_reference_game"
+company_name "Timingplanet"
+product_version "1.0.0"
+package_name "VesperaReferenceGame"
+managed_deployment "framework-dependent"
+executable_name "VesperaReferenceGame"
+build_output_directory "builds"
+game_icon_asset "07400000000000000000000000000002" "textures/editor_badge.png"
+development_diagnostics 1
+window_title "Vespera Reference Game"
+window_width 1280
+window_height 720
+window_resizable 1
+relative_mouse 1
+escape_quits 1
+vsync 1
+input_bind "move_forward" "key" "W" 1.0 0.0
+input_bind "move_forward" "key" "S" -1.0 0.0
+input_bind "move_forward" "gamepad_axis" "LeftY" -1.0 0.18
+input_bind "move_right" "key" "D" 1.0 0.0
+input_bind "move_right" "key" "A" -1.0 0.0
+input_bind "move_right" "gamepad_axis" "LeftX" 1.0 0.18
+input_bind "look_x" "gamepad_axis" "RightX" 1.0 0.16
+input_bind "look_y" "gamepad_axis" "RightY" 1.0 0.16
+input_bind "sprint" "key" "LeftShift" 1.0 0.0
+input_bind "sprint" "gamepad_button" "LeftStick" 1.0 0.0
+input_bind "probe" "key" "Enter" 1.0 0.0
+input_bind "scene_next" "key" "Up" 1.0 0.0
+input_bind "scene_previous" "key" "Down" 1.0 0.0
+input_bind "audio_test" "key" "Left" 1.0 0.0
+input_bind "audio_spatial" "key" "Right" 1.0 0.0
+input_bind "lifecycle_test" "key" "L" 1.0 0.0
+build_include_asset "1ad1cecbe1042e6de07ab52d4ab3086c" "animations/watcher_walk.slspritesheet"
+build_include_asset "07400000000000000000000000000001" "animations/watcher_walk.slspriteclip"
+build_include_asset "bd302cfe220a824954093d0fe0ac9693" "audio/test_chime.slaudio"
+build_include_asset "1794a50560a8f23ac5a50a743448bfc8" "scenes/alternate_chamber.slscene"
+build_include_asset "19c98b1357c54ffe80fa708aef01caea" "materials/concrete_lit.slmat"
+build_include_asset "8f091000000000000000000000000001" "ui/reference_hud.slui"
+end_project

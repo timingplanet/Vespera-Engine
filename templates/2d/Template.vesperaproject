@@ -1,0 +1,30 @@
+vespera_project 10
+name "Vespera 2D / UI Foundation"
+assets "assets"
+startup_scene_asset "98000000000000000000000000000002" "scenes/main.slscene"
+startup_ui_asset "98000000000000000000000000000012" "ui/main.rml"
+company_name ""
+product_version "0.1.0"
+package_name "Vespera2DUIFoundation"
+managed_deployment "framework-dependent"
+managed_project "managed/VesperaGame.Scripts.csproj"
+managed_assembly "VesperaGame.Scripts"
+executable_name "Vespera2DUIFoundation"
+build_output_directory "builds"
+development_diagnostics 1
+window_title "Vespera 2D / UI Foundation"
+window_width 1280
+window_height 720
+window_resizable 1
+relative_mouse 0
+escape_quits 1
+vsync 1
+input_bind "move_horizontal" "key" "D" 1.0 0.0
+input_bind "move_horizontal" "key" "A" -1.0 0.0
+input_bind "move_horizontal" "key" "Right" 1.0 0.0
+input_bind "move_horizontal" "key" "Left" -1.0 0.0
+input_bind "move_vertical" "key" "S" 1.0 0.0
+input_bind "move_vertical" "key" "W" -1.0 0.0
+input_bind "move_vertical" "key" "Down" 1.0 0.0
+input_bind "move_vertical" "key" "Up" -1.0 0.0
+end_project

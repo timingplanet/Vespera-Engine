@@ -1,0 +1,15 @@
+vespera_meta 3
+id "986a8c6925f24a335731edcd24232b61"
+importer "vespera.texture.bmp"
+source_size 262198
+source_hash "7da140ee279b4941"
+source_mtime -4649014420000000000
+texture_usage "world"
+texture_filter "nearest"
+texture_wrap_u "repeat"
+texture_wrap_v "repeat"
+texture_color_space "srgb"
+texture_alpha "auto"
+texture_mipmaps "auto"
+texture_max_size 0
+end_meta

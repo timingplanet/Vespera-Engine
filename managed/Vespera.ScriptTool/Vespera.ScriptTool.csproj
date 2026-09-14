@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework Condition="'$(VesperaTargetFramework)' == ''">net8.0</TargetFramework>
+    <TargetFramework Condition="'$(VesperaTargetFramework)' != ''">$(VesperaTargetFramework)</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <AssemblyName>Vespera.ScriptTool</AssemblyName>
+    <RootNamespace>Vespera.ScriptTool</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Vespera.NET/Vespera.NET.csproj" />
+  </ItemGroup>
+</Project>

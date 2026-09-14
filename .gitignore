@@ -1,0 +1,21 @@
+/build/
+/build-tests/
+/out/
+.vs/
+.idea/
+.vscode/
+*.user
+*.suo
+*.VC.db
+*.VC.VC.opendb
+__pycache__/
+*.pyc
+.qa-hotfix-backups/
+examples/__vespera_rc_qa_reference/
+*.log
+
+# Managed and packaged build output
+**/bin/
+**/obj/
+**/builds/
+Vespera.ManagedBuildDiagnostics*.txt
