@@ -1,3 +1,10 @@
+## 💬 Join the Vespera Community
+
+Join the **official Vespera Engine Discord** to stay up to date with the latest news, development updates, and releases.
+
+👉 **[Join the Vespera Engine Discord](https://discord.gg/8rJYSUnEkK)**
+
+
 # Vespera Engine
 
 **Version:** `1.0.0`  
