@@ -152,8 +152,11 @@ def main() -> int:
     if args.platform == "linux" and not os.access(game, os.X_OK):
         fail(f"Exported Linux game is not executable: {game}")
     if args.managed_deployment == "portable":
+        # A packaged game needs the local hostfxr + Microsoft.NETCore.App runtime
+        # payload used by Vespera's native managed host. It does not require the
+        # dotnet CLI launcher (dotnet/dotnet[.exe]), which is an SDK/CLI entry
+        # point and is intentionally not part of the minimal exported runtime.
         portable_root = export_dir / "dotnet"
-        require_file(portable_root / ("dotnet.exe" if args.platform == "windows" else "dotnet"), "exported portable dotnet launcher")
         fxr_root = portable_root / "host" / "fxr"
         if not fxr_root.is_dir() or not any(fxr_root.iterdir()):
             fail("Portable export is missing dotnet/host/fxr payload")
