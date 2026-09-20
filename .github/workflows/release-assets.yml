@@ -99,6 +99,8 @@ jobs:
   linux:
     name: Linux x64 portable
     runs-on: ubuntu-latest
+    env:
+      SDL_AUDIO_DRIVER: dummy
     steps:
       - uses: actions/checkout@v4
       - name: Verify tag matches source version

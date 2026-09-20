@@ -43,6 +43,8 @@ jobs:
   linux-vulkan-runtime:
     name: Vulkan + Linux runtime/editor smoke
     runs-on: ubuntu-latest
+    env:
+      SDL_AUDIO_DRIVER: dummy
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
