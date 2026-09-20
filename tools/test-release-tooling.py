@@ -158,12 +158,20 @@ def main() -> int:
         good_windows = temp / "release-windows" / f"VesperaEngine-{VERSION}-Windows-x64-Portable.zip"
         duplicate_manifest = temp / "bad-duplicate-manifest.zip"
         with zipfile.ZipFile(good_windows) as source, zipfile.ZipFile(duplicate_manifest, "w") as destination:
+            manifest_mutated = False
             for info in source.infolist():
-                if info.is_dir(): continue
-                data=source.read(info.filename)
-                if info.filename.endswith("/Vespera.DistributionManifest.txt"):
-                    data=data.replace(b"end_distribution\n", f'version "{VERSION}"\nend_distribution\n'.encode())
-                destination.writestr(info,data)
+                if info.is_dir():
+                    continue
+                data = source.read(info.filename)
+                normalized_name = info.filename.replace("\\", "/")
+                if normalized_name.split("/")[-1] == "Vespera.DistributionManifest.txt":
+                    manifest_lines = data.decode("utf-8").splitlines()
+                    footer_index = manifest_lines.index("end_distribution")
+                    manifest_lines.insert(footer_index, f'version "{VERSION}"')
+                    data = ("\n".join(manifest_lines) + "\n").encode("utf-8")
+                    manifest_mutated = True
+                destination.writestr(info, data)
+            assert manifest_mutated, "Could not find Vespera.DistributionManifest.txt in Windows test archive"
         rejected=run(sys.executable,"tools/validate-release-archive.py","--archive",str(duplicate_manifest),"--platform","windows",expect_success=False)
         assert "Duplicate distribution manifest key" in rejected.stdout
         root_name=f"VesperaEngine-{VERSION}-Windows-x64"
@@ -175,8 +183,16 @@ def main() -> int:
         rejected=run(sys.executable,"tools/validate-release-archive.py","--archive",str(case_collision),"--platform","windows",expect_success=False)
         assert "case-colliding entries" in rejected.stdout
         backslash_member=temp/"bad-backslash.zip"
-        with zipfile.ZipFile(backslash_member,"w") as archive:
-            archive.writestr(f"{root_name}\\Vespera.DistributionManifest.txt","vespera_distribution 1\nend_distribution\n")
+        canonical_member=f"{root_name}/Vespera.DistributionManifest.txt"
+        noncanonical_member=f"{root_name}\\Vespera.DistributionManifest.txt"
+        with zipfile.ZipFile(backslash_member,"w",compression=zipfile.ZIP_STORED) as archive:
+            archive.writestr(canonical_member,"vespera_distribution 1\nend_distribution\n")
+        archive_bytes=backslash_member.read_bytes()
+        canonical_bytes=canonical_member.encode("utf-8")
+        noncanonical_bytes=noncanonical_member.encode("utf-8")
+        occurrences=archive_bytes.count(canonical_bytes)
+        assert occurrences == 2, f"Expected ZIP member name twice, found {occurrences}"
+        backslash_member.write_bytes(archive_bytes.replace(canonical_bytes,noncanonical_bytes))
         rejected=run(sys.executable,"tools/validate-release-archive.py","--archive",str(backslash_member),"--platform","windows",expect_success=False)
         assert "non-canonical path" in rejected.stdout
 

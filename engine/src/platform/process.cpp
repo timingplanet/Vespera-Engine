@@ -111,7 +111,9 @@ std::vector<std::string> make_posix_argv(const ProcessOptions& options) {
 
 [[noreturn]] void exec_posix(const ProcessOptions& options) {
     if (!options.working_directory.empty()) {
-        (void)::chdir(options.working_directory.c_str());
+        if (::chdir(options.working_directory.c_str()) != 0) {
+            _exit(126);
+        }
     }
     auto values = make_posix_argv(options);
     std::vector<char*> argv;
