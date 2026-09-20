@@ -175,6 +175,11 @@ def main() -> int:
     parser.add_argument("--require-dotnet", action="store_true")
     parser.add_argument("--run-tool-smoke", action="store_true")
     parser.add_argument("--reject-unlisted", action="store_true", help="Reject files not covered by the payload SHA-256 manifest")
+    parser.add_argument(
+        "--allow-noncanonical-root-name",
+        action="store_true",
+        help="Allow an installed distribution root whose directory name differs from the canonical package root",
+    )
     args = parser.parse_args()
 
     root = pathlib.Path(args.root).resolve()
@@ -191,7 +196,7 @@ def main() -> int:
 
     platform_label = "Windows" if args.platform == "windows" else "Linux"
     expected_root_name = f"VesperaEngine-{version}-{platform_label}-x64"
-    if root.name != expected_root_name:
+    if not args.allow_noncanonical_root_name and root.name != expected_root_name:
         raise SystemExit(
             f"Distribution root name mismatch: found {root.name!r}, expected {expected_root_name!r}"
         )

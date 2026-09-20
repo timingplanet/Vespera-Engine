@@ -250,6 +250,27 @@ def main() -> int:
         )
         assert "Distribution root name mismatch" in rejected.stdout
 
+        # Installed products may live in an arbitrary directory selected by the
+        # installer/user. Keep canonical root-name enforcement for staged/archive
+        # distributions, but allow the installed-product validator to opt out.
+        installed_parent = temp / "installed-root-name-test"
+        with zipfile.ZipFile(good_windows) as archive:
+            archive.extractall(installed_parent)
+        canonical_installed_root = installed_parent / f"VesperaEngine-{VERSION}-Windows-x64"
+        installed_root = installed_parent / "VesperaEngineInstalled"
+        canonical_installed_root.rename(installed_root)
+        rejected = run(
+            sys.executable, "tools/validate-distribution.py",
+            "--root", str(installed_root), "--platform", "windows", "--require-dotnet",
+            expect_success=False,
+        )
+        assert "Distribution root name mismatch" in rejected.stdout
+        run(
+            sys.executable, "tools/validate-distribution.py",
+            "--root", str(installed_root), "--platform", "windows", "--require-dotnet",
+            "--allow-noncanonical-root-name",
+        )
+
         # Source archives must exclude arbitrary build* directories, not just a
         # hard-coded list of known build folder names.
         sentinel_dir = ROOT / "build-release-sentinel-test"

@@ -81,7 +81,7 @@ jobs:
           )
           $InstallProcess = Start-Process -FilePath $Installer.FullName -ArgumentList $InstallArgs -Wait -PassThru
           if ($InstallProcess.ExitCode -ne 0) { throw "Vespera installer failed with exit code $($InstallProcess.ExitCode)." }
-          python tools/validate-distribution.py --root "$InstallRoot" --platform windows --require-dotnet --run-tool-smoke
+          python tools/validate-distribution.py --root "$InstallRoot" --platform windows --require-dotnet --run-tool-smoke --allow-noncanonical-root-name
           if ($LASTEXITCODE -ne 0) { throw "Installed Vespera distribution validation failed." }
           python tools/validate-installed-workflow.py `
             --root "$InstallRoot" `
