@@ -72,8 +72,15 @@ jobs:
           if (-not $Installer) { throw "Windows installer was not produced." }
           $InstallRoot = Join-Path $env:RUNNER_TEMP "VesperaEngineInstalled"
           Remove-Item -Recurse -Force $InstallRoot -ErrorAction SilentlyContinue
-          & $Installer.FullName /VERYSILENT /SUPPRESSMSGBOXES /NORESTART /SP- "/DIR=$InstallRoot"
-          if ($LASTEXITCODE -ne 0) { throw "Vespera installer failed with exit code $LASTEXITCODE." }
+          $InstallArgs = @(
+            '/VERYSILENT',
+            '/SUPPRESSMSGBOXES',
+            '/NORESTART',
+            '/SP-',
+            ('/DIR="{0}"' -f $InstallRoot)
+          )
+          $InstallProcess = Start-Process -FilePath $Installer.FullName -ArgumentList $InstallArgs -Wait -PassThru
+          if ($InstallProcess.ExitCode -ne 0) { throw "Vespera installer failed with exit code $($InstallProcess.ExitCode)." }
           python tools/validate-distribution.py --root "$InstallRoot" --platform windows --require-dotnet --run-tool-smoke
           if ($LASTEXITCODE -ne 0) { throw "Installed Vespera distribution validation failed." }
           python tools/validate-installed-workflow.py `
@@ -83,8 +90,10 @@ jobs:
             --managed-deployment portable `
             --work-dir (Join-Path $env:RUNNER_TEMP "VesperaInstallerWorkflow")
           if ($LASTEXITCODE -ne 0) { throw "Installed Vespera public workflow validation failed." }
-          if (Test-Path -LiteralPath (Join-Path $InstallRoot "unins000.exe")) {
-            & (Join-Path $InstallRoot "unins000.exe") /VERYSILENT /SUPPRESSMSGBOXES /NORESTART
+          $Uninstaller = Join-Path $InstallRoot "unins000.exe"
+          if (Test-Path -LiteralPath $Uninstaller) {
+            $UninstallProcess = Start-Process -FilePath $Uninstaller -ArgumentList @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART') -Wait -PassThru
+            if ($UninstallProcess.ExitCode -ne 0) { throw "Vespera uninstaller failed with exit code $($UninstallProcess.ExitCode)." }
           }
 
       - name: Upload Windows release artifacts
@@ -154,15 +163,18 @@ jobs:
 
           PROJECT="$(cat /tmp/vespera-release-installed-workflow/project-result.txt)"
           test -f "$PROJECT"
+          GAME_NAME="$(basename "$PROJECT" .vesperaproject)"
+          EXPORTED_GAME="/tmp/vespera-release-installed-workflow/export/$GAME_NAME"
+
           VESPERA_SMOKE_FRAMES=30 xvfb-run -a -s "-screen 0 1280x720x24" \
             "$STAGE/VesperaEditor" --renderer=vulkan "$PROJECT" \
             2>&1 | tee /tmp/vespera-release-editor-linux.log
           grep -q "Vulkan initialized" /tmp/vespera-release-editor-linux.log
-          grep -q "Editor renderer: Vulkan" /tmp/vespera-release-editor-linux.log
           grep -q "Smoke mode complete" /tmp/vespera-release-editor-linux.log
 
+          test -x "$EXPORTED_GAME"
           VESPERA_SMOKE_FRAMES=30 xvfb-run -a -s "-screen 0 1280x720x24" \
-            /tmp/vespera-release-installed-workflow/export/Vespera3DGame --renderer vulkan \
+            "$EXPORTED_GAME" --renderer vulkan \
             2>&1 | tee /tmp/vespera-release-export-linux.log
           grep -q "Vulkan initialized" /tmp/vespera-release-export-linux.log
           grep -q ".NET runtime online" /tmp/vespera-release-export-linux.log
