@@ -12,18 +12,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Configure renderer-independent tests
-        run: cmake -S . -B build-tests -G Ninja -DVESPERA_TESTS_ONLY=ON -DVESPERA_WARNINGS_AS_ERRORS=ON
-      - name: Build
-        run: cmake --build build-tests
-      - name: Test
-        run: ctest --test-dir build-tests --output-on-failure
       - name: Validate source tree
         run: python3 tools/validate_source.py
       - name: Validate release tooling
         run: python3 tools/test-release-tooling.py
       - name: Validate public source tree
         run: python3 tools/validate_public_release.py
+      - name: Configure renderer-independent tests
+        run: cmake -S . -B build-tests -G Ninja -DVESPERA_TESTS_ONLY=ON -DVESPERA_WARNINGS_AS_ERRORS=ON
+      - name: Build
+        run: cmake --build build-tests
+      - name: Test
+        run: ctest --test-dir build-tests --output-on-failure
 
   clang-logic-tests:
     name: Clang logic tests

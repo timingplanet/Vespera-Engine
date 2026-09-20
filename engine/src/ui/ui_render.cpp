@@ -437,8 +437,6 @@ void append_styled_text(std::vector<UiDrawVertex>& vertices,const UiRect& rect,s
     append_atlas_text(vertices,rect,utf8,text,scale_factor,pack_color(text.color,opacity),glyphs,clip);
 }
 
-bool point_in_rect(UiVec2 point,const UiRect& rect){return point.x>=rect.x&&point.y>=rect.y&&point.x<=rect.x+rect.width&&point.y<=rect.y+rect.height;}
-
 #ifdef _WIN32
 std::uint16_t be16(const std::uint8_t* p){return static_cast<std::uint16_t>((p[0]<<8u)|p[1]);}
 std::uint32_t be32(const std::uint8_t* p){return (static_cast<std::uint32_t>(p[0])<<24u)|(static_cast<std::uint32_t>(p[1])<<16u)|(static_cast<std::uint32_t>(p[2])<<8u)|p[3];}
@@ -465,9 +463,8 @@ std::vector<PendingRegion> rasterize_face(const FaceRequest& face,std::vector<st
         const int h = std::max<int>(8, static_cast<int>(tm.tmHeight) + 2);BITMAPINFO bmi{};bmi.bmiHeader.biSize=sizeof(BITMAPINFOHEADER);bmi.bmiHeader.biWidth=w;bmi.bmiHeader.biHeight=-h;bmi.bmiHeader.biPlanes=1;bmi.bmiHeader.biBitCount=32;bmi.bmiHeader.biCompression=BI_RGB;void* bits=nullptr;HBITMAP bmp=CreateDIBSection(dc,&bmi,DIB_RGB_COLORS,&bits,nullptr,0);if(!bmp||!bits){if(bmp)DeleteObject(bmp);continue;}HGDIOBJ oldBmp=SelectObject(dc,bmp);std::memset(bits,0,static_cast<std::size_t>(w)*h*4u);TextOutW(dc,pad,0,&wc,1);TextureData tex;tex.name=glyph_key(face.key,cp);tex.width=w;tex.height=h;tex.rgba8.resize(static_cast<std::size_t>(w)*h*4u);const auto* src=static_cast<const std::uint8_t*>(bits);for(std::size_t i=0;i<static_cast<std::size_t>(w)*h;++i){const std::uint8_t cov=std::max({src[i*4u+0],src[i*4u+1],src[i*4u+2]});tex.rgba8[i*4u+0]=255;tex.rgba8[i*4u+1]=255;tex.rgba8[i*4u+2]=255;tex.rgba8[i*4u+3]=cov;}SelectObject(dc,oldBmp);DeleteObject(bmp);PendingRegion region;region.key=tex.name;region.texture=std::move(tex);region.glyph=true;region.advance=static_cast<float>(size.cx);region.offset_x=-static_cast<float>(pad);region.offset_y=0;region.line_height=static_cast<float>(tm.tmHeight);out.push_back(std::move(region));}
     SelectObject(dc,oldFont);DeleteObject(font);DeleteDC(dc);return out;
 }
-#endif
-
 void collect_text_codepoints(std::set<std::uint32_t>& set,std::string_view text){for(char32_t cp:decode_utf8(text))set.insert(static_cast<std::uint32_t>(cp));}
+#endif
 
 } // namespace
 
