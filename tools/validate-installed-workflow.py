@@ -140,7 +140,11 @@ def main() -> int:
         *common_managed,
     ], cwd=root, env=env, timeout=1200)
 
-    game = require_file(export_dir / ("Vespera3DGame.exe" if args.platform == "windows" else "Vespera3DGame"), "exported game")
+    # The shared player export is named after the project created by the Hub.
+    # Derive the expected runtime name from the actual .vesperaproject filename
+    # instead of relying on the old hard-coded Vespera3DGame name.
+    game_name = project.stem
+    game = require_file(export_dir / f"{game_name}{suffix}", "exported game")
     require_file(export_dir / "managed" / "VesperaGame.Scripts.dll", "exported managed game assembly")
     packaged_projects = sorted(export_dir.glob("*.vesperaproject"))
     if len(packaged_projects) != 1:
