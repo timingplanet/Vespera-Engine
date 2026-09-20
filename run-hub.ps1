@@ -22,7 +22,7 @@ if (Test-Path $Result) { Remove-Item $Result -Force }
 Write-Host "Opening Vespera Project Hub..." -ForegroundColor Cyan
 Push-Location $HubDir
 try {
-    & $Hub "--templates=$(Join-Path $HubDir 'templates')" "--result=$Result"
+    & $Hub "--templates=$(Join-Path $HubDir 'templates')" "--result=$Result" "--no-launch-editor"
 } finally {
     Pop-Location
 }

@@ -1,0 +1,192 @@
+name: Build Vespera release assets
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    name: Windows x64 portable + installer
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify tag matches source version
+        if: startsWith(github.ref, 'refs/tags/')
+        run: python tools/check-release-version.py --tag "${{ github.ref_name }}"
+      - name: Install Inno Setup
+        shell: powershell
+        run: choco install innosetup --no-progress -y
+      - name: Validate release source and tooling
+        shell: powershell
+        run: |
+          python tools/validate_source.py
+          python tools/validate_public_release.py
+          python tools/test-release-tooling.py
+      - name: Stage pinned .NET SDK
+        shell: powershell
+        run: |
+          $DotnetRoot = Join-Path $env:RUNNER_TEMP "vespera-dotnet"
+          python tools/fetch-dotnet-sdk.py --platform windows --output "$DotnetRoot"
+          & (Join-Path $DotnetRoot "dotnet.exe") --info
+      - name: Build release artifacts
+        shell: powershell
+        run: |
+          $DotnetRoot = Join-Path $env:RUNNER_TEMP "vespera-dotnet"
+          python tools/build-release-assets.py `
+            --platform windows `
+            --build-dir build-release `
+            --configuration Release `
+            --output-dir release `
+            --dotnet-root "$DotnetRoot" `
+            --require-installer
+      - name: Validate assembled Windows distribution
+        shell: powershell
+        run: |
+          $Stage = Get-ChildItem -Directory release\stage | Where-Object { $_.Name -like 'VesperaEngine-*-Windows-x64' } | Select-Object -First 1
+          if (-not $Stage) { throw "Windows distribution stage was not produced." }
+          python tools/validate-distribution.py --root "$($Stage.FullName)" --platform windows --require-dotnet --run-tool-smoke --reject-unlisted
+          $Archive = Get-ChildItem -File release\VesperaEngine-*-Windows-x64-Portable.zip | Select-Object -First 1
+          if (-not $Archive) { throw "Windows portable archive was not produced." }
+          python tools/validate-release-archive.py --archive "$($Archive.FullName)" --platform windows --require-dotnet --run-tool-smoke
+      - name: Smoke installed Windows product workflow
+        shell: powershell
+        run: |
+          $Stage = Get-ChildItem -Directory release\stage | Where-Object { $_.Name -like 'VesperaEngine-*-Windows-x64' } | Select-Object -First 1
+          if (-not $Stage) { throw "Windows distribution stage was not produced." }
+          python tools/validate-installed-workflow.py `
+            --root "$($Stage.FullName)" `
+            --platform windows `
+            --configuration Release `
+            --managed-deployment portable `
+            --work-dir (Join-Path $env:RUNNER_TEMP "VesperaInstalledWorkflow")
+
+      - name: Validate Windows installer round-trip
+        shell: powershell
+        run: |
+          $Installer = Get-ChildItem -File release\VesperaEngine-*-Windows-x64-Setup.exe | Select-Object -First 1
+          if (-not $Installer) { throw "Windows installer was not produced." }
+          $InstallRoot = Join-Path $env:RUNNER_TEMP "VesperaEngineInstalled"
+          Remove-Item -Recurse -Force $InstallRoot -ErrorAction SilentlyContinue
+          & $Installer.FullName /VERYSILENT /SUPPRESSMSGBOXES /NORESTART /SP- "/DIR=$InstallRoot"
+          if ($LASTEXITCODE -ne 0) { throw "Vespera installer failed with exit code $LASTEXITCODE." }
+          python tools/validate-distribution.py --root "$InstallRoot" --platform windows --require-dotnet --run-tool-smoke
+          if ($LASTEXITCODE -ne 0) { throw "Installed Vespera distribution validation failed." }
+          python tools/validate-installed-workflow.py `
+            --root "$InstallRoot" `
+            --platform windows `
+            --configuration Release `
+            --managed-deployment portable `
+            --work-dir (Join-Path $env:RUNNER_TEMP "VesperaInstallerWorkflow")
+          if ($LASTEXITCODE -ne 0) { throw "Installed Vespera public workflow validation failed." }
+          if (Test-Path -LiteralPath (Join-Path $InstallRoot "unins000.exe")) {
+            & (Join-Path $InstallRoot "unins000.exe") /VERYSILENT /SUPPRESSMSGBOXES /NORESTART
+          }
+
+      - name: Upload Windows release artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: vespera-windows-x64
+          path: |
+            release/VesperaEngine-*-Windows-x64-Portable.zip
+            release/VesperaEngine-*-Windows-x64-Setup.exe
+          if-no-files-found: error
+
+  linux:
+    name: Linux x64 portable
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify tag matches source version
+        if: startsWith(github.ref, 'refs/tags/')
+        run: python tools/check-release-version.py --tag "${{ github.ref_name }}"
+      - name: Install Linux build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            ninja-build xvfb xauth vulkan-tools libvulkan1 mesa-vulkan-drivers \
+            libx11-dev libxext-dev libxrandr-dev libxcursor-dev libxi-dev \
+            libxfixes-dev libxss-dev libxtst-dev libwayland-dev libxkbcommon-dev \
+            libdecor-0-dev libdbus-1-dev libudev-dev
+      - name: Validate release source and tooling
+        shell: bash
+        run: |
+          python3 tools/validate_source.py
+          python3 tools/validate_public_release.py
+          python3 tools/test-release-tooling.py
+      - name: Stage pinned .NET SDK
+        shell: bash
+        run: |
+          DOTNET_ROOT="$RUNNER_TEMP/vespera-dotnet"
+          python3 tools/fetch-dotnet-sdk.py --platform linux --output "$DOTNET_ROOT"
+          "$DOTNET_ROOT/dotnet" --info
+      - name: Build release artifact
+        shell: bash
+        run: |
+          DOTNET_ROOT="$RUNNER_TEMP/vespera-dotnet"
+          python3 tools/build-release-assets.py \
+            --platform linux \
+            --build-dir build-release-linux \
+            --configuration Release \
+            --output-dir release \
+            --dotnet-root "$DOTNET_ROOT"
+      - name: Validate assembled Linux distribution
+        shell: bash
+        run: |
+          STAGE="$(find release/stage -mindepth 1 -maxdepth 1 -type d -name 'VesperaEngine-*-Linux-x64' -print -quit)"
+          test -n "$STAGE"
+          python3 tools/validate-distribution.py --root "$STAGE" --platform linux --require-dotnet --run-tool-smoke --reject-unlisted
+          ARCHIVE="$(find release -maxdepth 1 -type f -name 'VesperaEngine-*-Linux-x64.tar.gz' -print -quit)"
+          test -n "$ARCHIVE"
+          python3 tools/validate-release-archive.py --archive "$ARCHIVE" --platform linux --require-dotnet --run-tool-smoke
+          python3 tools/validate-installed-workflow.py \
+            --root "$STAGE" \
+            --platform linux \
+            --configuration Release \
+            --managed-deployment portable \
+            --work-dir /tmp/vespera-release-installed-workflow
+
+          PROJECT="$(cat /tmp/vespera-release-installed-workflow/project-result.txt)"
+          test -f "$PROJECT"
+          VESPERA_SMOKE_FRAMES=30 xvfb-run -a -s "-screen 0 1280x720x24" \
+            "$STAGE/VesperaEditor" --renderer=vulkan "$PROJECT" \
+            2>&1 | tee /tmp/vespera-release-editor-linux.log
+          grep -q "Vulkan initialized" /tmp/vespera-release-editor-linux.log
+          grep -q "Editor renderer: Vulkan" /tmp/vespera-release-editor-linux.log
+          grep -q "Smoke mode complete" /tmp/vespera-release-editor-linux.log
+
+          VESPERA_SMOKE_FRAMES=30 xvfb-run -a -s "-screen 0 1280x720x24" \
+            /tmp/vespera-release-installed-workflow/export/Vespera3DGame --renderer vulkan \
+            2>&1 | tee /tmp/vespera-release-export-linux.log
+          grep -q "Vulkan initialized" /tmp/vespera-release-export-linux.log
+          grep -q ".NET runtime online" /tmp/vespera-release-export-linux.log
+          grep -q "Smoke mode complete" /tmp/vespera-release-export-linux.log
+      - name: Upload Linux release artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: vespera-linux-x64
+          path: release/VesperaEngine-*-Linux-x64.tar.gz
+          if-no-files-found: error
+
+  publish:
+    name: Publish GitHub release assets
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: [windows, linux]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+      - name: Publish binary assets
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            artifacts/VesperaEngine-*-Windows-x64-Setup.exe
+            artifacts/VesperaEngine-*-Windows-x64-Portable.zip
+            artifacts/VesperaEngine-*-Linux-x64.tar.gz
+          generate_release_notes: true

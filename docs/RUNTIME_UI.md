@@ -1,41 +1,66 @@
-# Vespera runtime UI
+# Runtime UI API
 
-## 0.9.8 direction
+The managed UI API gives gameplay code a stable semantic interface over the active UI document.
 
-RmlUi 6.2 + FreeType 2.14.1 is now Vespera's chosen low-level production UI foundation. Vespera owns the gameplay/API/asset/editor/automation boundary and renderer integration; RmlUi supplies DOM/layout/text/forms/styling.
+## Find an element
 
-See `RMLUI.md` for the production architecture.
+```csharp
+var score = UI.Find("score");
+var required = UI.FindRequired("health-bar");
+```
 
+`Find` returns `null` when the element is unavailable. `FindRequired` throws with a clear message, which is useful when an element is mandatory for the game to function.
 
-## 0.9.9c managed semantic bridge
+## Common properties
 
-Managed C# UI now routes through the engine-owned `UiSurface` contract. `ManagedScriptHost` accepts a surface instead of legacy document/runtime pointers, and `UiHandleTable` gives C# opaque numeric handles that revalidate against the active backend. The existing reference HUD is still `.slui` through `LegacyUiSurface`; RmlUi can satisfy the same managed operations.
+```csharp
+var panel = UI.FindRequired("pause-panel");
+panel.Visible = true;
+panel.Interactable = true;
+panel.Text = "Paused";
+```
 
-The current managed ABI is **v12 / 88 ordered native+C# fields**; the UI callbacks themselves were introduced in v10. `UiElement` retains the existing text/visible/interactable/focus/value/color/asset/click surface and adds `ValueText`, `SetProperty`, and `SetClass` for form controls and RML/RCSS workflows. CSS-only operations continue to fail on legacy `.slui` instead of pretending support. MCP/editor UI authoring remains legacy in 0.9.9c.
+`Visible` is friendly terminology over the UI enabled state.
 
-## 0.9.9b semantic surface seam
+Form-capable elements expose:
 
-`UiSurface` is now the engine-owned game-facing UI contract. `LegacyUiSurface` adapts `.slui`, and `RmlUiSurface` implements the same semantic element interface. The seam intentionally excludes layout/serialization/render preparation. Managed C# and MCP remain on the legacy document in 0.9.9b; migrating those callers through `UiSurface` is the next compatibility-preserving step.
+```csharp
+field.ValueText = "Player";
+slider.Value = 0.75f;
+field.Focused = true;
+field.ReadOnly = false;
+```
 
-## Legacy `.slui` compatibility
+## Click handling
 
-The existing engine-native `.slui` v3 implementation remains supported while production APIs and QA migrate. It continues loading v1/v2/v3 documents and remains the current reference-runtime semantic automation path.
+```csharp
+if (UI.Find("continue")?.Clicked ?? false)
+    ContinueGame();
+```
 
-`.slui` v3 includes Canvas, Panel, Text, Image, Button, ProgressBar, ScrollView, List, Grid, Tabs, Modal, Tooltip and TextInput plus rounded surfaces, borders, shadows, image fit/9-slice and richer typography. Windows uses antialiased installed/project fonts with a deterministic bitmap fallback.
+A click is consumed once when polled.
 
-The legacy `.slui` loader/runtime remains regression coverage during migration. Its existing `UiElement` semantics, pointer/focus/text input, runtime telemetry and exported-runtime automation are preserved through `LegacyUiSurface`.
+## RmlUi styling
 
-## Migration requirements before retiring `.slui`
+For RmlUi-backed elements:
 
-- equivalent C# and Lua semantic wrappers over RmlUi elements;
-- stable project asset integration for RML/RCSS/images/fonts;
-- editor authoring/preview and diagnostics;
-- MCP creation/edit/query operations with efficient batched changes;
-- runtime input/focus/text telemetry parity;
-- standalone package/export dependency coverage;
-- compatibility/migration guidance for existing `.slui` documents.
+```csharp
+element.SetProperty("left", "120px");
+element.SetProperty("top", "48px");
+element.SetClass("selected", true);
+```
 
-## 0.9.9b1 RmlUi sizing hotfix
+These operations intentionally return a boolean because CSS-style mutation is not supported by every legacy UI node.
 
-Windows visual feedback showed that the remaining oversized-control feel was primarily authored RCSS sizing rather than a renderer or `UiSurface` problem. The Project Hub now uses a tighter content/panel/input width budget, and the guild showcase uses shrink-to-fit inline-block layout for primary/secondary action buttons while retaining full-width selection/list rows. RmlUi documents `min-width` with an initial value of `0px`; explicit `min-width: 0px` in the Hub is therefore descriptive, not the claimed fix.
+## Color and asset helpers
 
+`UiElement` includes semantic helpers for color state, progress colors, images, and fonts:
+
+```csharp
+element.SetTextColor(new Color(1, 0.8f, 0.2f, 1));
+element.SetImage(Assets.FromPath("textures/icon.png"));
+```
+
+## Checking existence
+
+A retained `UiElement` can become unavailable after UI or scene changes. Check `Exists` when holding references across those boundaries.

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Vespera 1.0.0 direct automation torture smoke.
+"""Vespera 1.1.0 direct automation regression smoke.
 
 Run the editor with run.ps1 -Automation first. This script intentionally uses
 VAP v1, the same localhost/main-thread boundary consumed by the MCP bridge.
@@ -8,7 +8,7 @@ from __future__ import annotations
 import argparse, json, socket, subprocess, sys, time, urllib.parse
 from pathlib import Path
 
-QA_VERSION = "1.0.0"
+QA_VERSION = "1.1.0"
 
 
 def enc(v: object) -> str:

@@ -14,8 +14,5 @@ __pycache__/
 examples/__vespera_rc_qa_reference/
 *.log
 
-# Managed and packaged build output
-**/bin/
-**/obj/
-**/builds/
-Vespera.ManagedBuildDiagnostics*.txt
+# Per-project generated editor/build state.
+.vespera/

@@ -138,9 +138,10 @@ if (-not $ManagedDir -and $ManagedProject) {
     finally { $Hasher.Dispose() }
     $ManagedDir = Join-Path $BuildDir ("managed\exports\{0}-{1}" -f (($ManagedAssembly -replace '[^A-Za-z0-9._-]+', '-')), $ProjectHash)
     $ManagedDiagnostics = Join-Path $ManagedDir "Vespera.ManagedBuildDiagnostics.txt"
+    $ManagedConfiguration = if ($NativeConfig -eq "Debug") { "Debug" } else { "Release" }
     Write-Host "`nBuilding project C# assembly for export..." -ForegroundColor Cyan
     & (Join-Path $Root "tools\build-managed-editor.ps1") -Project $ManagedProjectPath -GameAssemblyName $ManagedAssembly `
-        -OutputDir $ManagedDir -DiagnosticsFile $ManagedDiagnostics -NoMirrors
+        -Configuration $ManagedConfiguration -OutputDir $ManagedDir -DiagnosticsFile $ManagedDiagnostics -NoMirrors
     if ($LASTEXITCODE -ne 0) { throw "Project C# build failed before export with exit code $LASTEXITCODE." }
 }
 
@@ -182,7 +183,7 @@ if ($DotnetRoot) { $Args += @("--dotnet-root", $DotnetRoot) }
 if ($NoClean) { $Args += "--no-clean" }
 if ($IncludeDebugSymbols) { $Args += "--debug-symbols" } else { $Args += "--no-debug-symbols" }
 
-Write-Host "Vespera Engine 1.0.0 export" -ForegroundColor Cyan
+Write-Host "Vespera Engine 1.1.0 export" -ForegroundColor Cyan
 Write-Host "Project:       $Project"
 Write-Host "Configuration: $Configuration ($NativeConfig native)"
 Write-Host "Runtime:       $RuntimeExe"

@@ -1,6 +1,6 @@
 sectorline_scene 15
 # Experimental 2D/UI foundation. Vespera 1.0 does not advertise dedicated
-# orthographic world/camera tooling; this scene intentionally dogfoods project-owned
+# orthographic world/camera tooling; this scene intentionally exercises project-owned
 # C# and RmlUi without hiding 3D assumptions behind a fake 2D mode.
 camera 0 0 -6 0 0 60 0.05 500
 entity 1001 1 "Game Root"

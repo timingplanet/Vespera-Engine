@@ -3,6 +3,8 @@ param(
     [string]$Project,
     [ValidateSet("Debug", "Release", "RelWithDebInfo")]
     [string]$Configuration = "Debug",
+    [ValidateSet("auto", "d3d12", "vulkan", "null")]
+    [string]$Renderer = "auto",
     [switch]$NoBuild
 )
 
@@ -32,11 +34,12 @@ if ($ManagedProject) {
     $ManagedProject = [System.IO.Path]::GetFullPath($ManagedProject)
     $SafeAssembly = $ManagedAssembly -replace '[^A-Za-z0-9._-]+', '-'
     $ManagedOut = Join-Path $Root "build\managed\player\$SafeAssembly"
-    & (Join-Path $Root "tools\build-managed-editor.ps1") -Project $ManagedProject -GameAssemblyName $ManagedAssembly `
+    $ManagedConfiguration = if ($Configuration -eq "Debug") { "Debug" } else { "Release" }
+    & (Join-Path $Root "tools\build-managed-editor.ps1") -Project $ManagedProject -GameAssemblyName $ManagedAssembly -Configuration $ManagedConfiguration `
         -OutputDir $ManagedOut -DiagnosticsFile (Join-Path $ManagedOut "Vespera.ManagedBuildDiagnostics.txt") -NoMirrors
     if ($LASTEXITCODE -ne 0) { throw "Project C# build failed with exit code $LASTEXITCODE." }
     $ManagedArgs = @("--managed-dir", $ManagedOut)
 }
 
-& $Player --project $Project @ManagedArgs
+& $Player --project $Project --renderer $Renderer @ManagedArgs
 exit $LASTEXITCODE

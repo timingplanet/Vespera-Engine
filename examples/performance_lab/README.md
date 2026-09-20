@@ -1,6 +1,6 @@
 # Vespera Performance Lab
 
-A normal Vespera Project v9 used for repeatable Windows/D3D12 performance dogfood. It goes through the same shared player, project-owned C#, RmlUi and Build Game/export pipeline as a user project.
+A normal Vespera project used for repeatable Windows/D3D12 performance testing. It goes through the same player, project-owned C#, RmlUi, and Build Game/export pipeline as a user project.
 
 ## Cinematic stress workload
 

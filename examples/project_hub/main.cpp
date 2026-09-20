@@ -4,12 +4,14 @@
 #include <vespera/core/version.hpp>
 #include <vespera/project/project.hpp>
 #include <vespera/project/project_templates.hpp>
+#include <vespera/platform/process.hpp>
 #include <vespera/render/render_backend.hpp>
 #include <vespera/ui/rmlui_surface.hpp>
 
 #include <algorithm>
 #include <cctype>
 #include <cstdlib>
+#include <cstdio>
 #include <filesystem>
 #include <fstream>
 #include <format>
@@ -63,9 +65,26 @@ std::filesystem::path settings_directory() {
     if (const char* local = std::getenv("LOCALAPPDATA"); local && *local)
         return std::filesystem::path(local) / "Vespera";
 #endif
+#ifndef _WIN32
+    if (const char* xdg = std::getenv("XDG_CONFIG_HOME"); xdg && *xdg)
+        return std::filesystem::path(xdg) / "Vespera";
+    if (const char* home = std::getenv("HOME"); home && *home)
+        return std::filesystem::path(home) / ".config" / "Vespera";
+#else
     if (const char* home = std::getenv("HOME"); home && *home)
         return std::filesystem::path(home) / ".vespera";
+#endif
     return std::filesystem::current_path();
+}
+
+std::filesystem::path hub_runtime_root() {
+    const auto executable = vespera::platform::current_executable_path();
+    if (!executable.empty()) return executable.parent_path().lexically_normal();
+    return std::filesystem::current_path();
+}
+
+std::filesystem::path default_hub_result_file() {
+    return settings_directory() / "hub_result.txt";
 }
 
 std::vector<std::filesystem::path> read_recent_projects() {
@@ -109,13 +128,84 @@ bool write_result(const std::filesystem::path& result_file, const std::filesyste
     return true;
 }
 
+
+std::filesystem::path find_editor_executable(const std::filesystem::path& explicit_path = {}) {
+    std::error_code ec;
+    if (!explicit_path.empty() && std::filesystem::is_regular_file(explicit_path, ec) && !ec) {
+        return std::filesystem::absolute(explicit_path).lexically_normal();
+    }
+    if (const char* env = std::getenv("VESPERA_EDITOR_PATH"); env && *env) {
+        std::filesystem::path path(env);
+        ec.clear();
+        if (std::filesystem::is_regular_file(path, ec) && !ec) return std::filesystem::absolute(path).lexically_normal();
+    }
+
+    const auto self = vespera::platform::current_executable_path();
+    if (self.empty()) return {};
+    const auto dir = self.parent_path();
+#ifdef _WIN32
+    const std::vector<std::filesystem::path> sibling_candidates{
+        dir / "VesperaEditor.exe",
+        dir / "vespera_editor.exe",
+    };
+#else
+    const std::vector<std::filesystem::path> sibling_candidates{
+        dir / "VesperaEditor",
+        dir / "vespera_editor",
+    };
+#endif
+    for (const auto& candidate : sibling_candidates) {
+        ec.clear();
+        if (std::filesystem::is_regular_file(candidate, ec) && !ec) return candidate.lexically_normal();
+    }
+
+    // Source-build fallback. Windows multi-config output lives one directory
+    // deeper than Linux/Ninja output, but both can be derived from the Hub path.
+#ifdef _WIN32
+    const auto config = dir.filename();
+    const auto build_root = dir.parent_path().parent_path().parent_path();
+    const auto source_candidate = build_root / "editor" / config / "vespera_editor.exe";
+#else
+    const auto build_root = dir.parent_path().parent_path();
+    const auto source_candidate = build_root / "editor" / "vespera_editor";
+#endif
+    ec.clear();
+    if (std::filesystem::is_regular_file(source_candidate, ec) && !ec) return source_candidate.lexically_normal();
+    return {};
+}
+
+bool launch_editor_for_project(
+    const std::filesystem::path& editor,
+    const std::filesystem::path& project,
+    std::string& error
+) {
+    if (editor.empty()) {
+        error = "Vespera Editor could not be located beside the Project Hub.";
+        return false;
+    }
+    vespera::platform::ProcessOptions process;
+    process.executable = editor;
+    process.arguments = {std::filesystem::absolute(project).lexically_normal().string()};
+    process.working_directory = editor.parent_path();
+    return vespera::platform::launch_process(process, &error);
+}
+
 class ProjectHubGame final : public vespera::Game {
 public:
-    ProjectHubGame(std::filesystem::path templates, std::filesystem::path result)
-        : template_root_(std::move(templates)), result_file_(std::move(result)) {}
+    ProjectHubGame(
+        std::filesystem::path templates,
+        std::filesystem::path result,
+        std::filesystem::path editor,
+        std::filesystem::path ui_document,
+        bool launch_editor)
+        : template_root_(std::move(templates)),
+          result_file_(std::move(result)),
+          editor_path_(std::move(editor)),
+          ui_document_(std::move(ui_document)),
+          launch_editor_(launch_editor) {}
 
     void on_start(vespera::GameContext&) override {
-        const auto loaded = ui_.initialize("ui/project_hub.rml", 1180, 760);
+        const auto loaded = ui_.initialize(ui_document_, 1180, 760);
         if (!loaded) {
             failed_ = true;
             vespera::log::error("Project Hub UI failed: " + loaded.message);
@@ -207,7 +297,11 @@ private:
             set_status(error, true);
             return;
         }
-        set_status(created.message + " Opening editor...", false);
+        if (launch_editor_ && !launch_editor_for_project(editor_path_, created.project_file, error)) {
+            set_status("Project created, but the editor could not be opened: " + error, true);
+            return;
+        }
+        set_status(launch_editor_ ? created.message + " Opening editor..." : created.message, false);
         quit_ = true;
     }
 
@@ -233,6 +327,10 @@ private:
             set_status(error, true);
             return;
         }
+        if (launch_editor_ && !launch_editor_for_project(editor_path_, path, error)) {
+            set_status("Project opened, but the editor could not be launched: " + error, true);
+            return;
+        }
         quit_ = true;
     }
 
@@ -240,7 +338,10 @@ private:
     vespera::ProjectTemplateKind selected_ = vespera::ProjectTemplateKind::Game3D;
     std::filesystem::path template_root_;
     std::filesystem::path result_file_;
+    std::filesystem::path editor_path_;
+    std::filesystem::path ui_document_;
     std::vector<std::filesystem::path> recent_;
+    bool launch_editor_ = true;
     bool failed_ = false;
     bool reported_warnings_ = false;
     bool quit_ = false;
@@ -254,11 +355,32 @@ std::filesystem::path arg_value(int argc, char** argv, std::string_view prefix, 
     return fallback;
 }
 
+
+bool has_arg(int argc, char** argv, std::string_view expected) {
+    for (int i = 1; i < argc; ++i) {
+        if (argv[i] && std::string_view(argv[i]) == expected) return true;
+    }
+    return false;
+}
+
 } // namespace
 
 int main(int argc, char** argv) {
-    const auto templates = arg_value(argc, argv, "--templates=", "templates");
-    const auto result = arg_value(argc, argv, "--result=", "vespera_hub_result.txt");
+    for (int i = 1; i < argc; ++i) {
+        const std::string_view arg = argv[i] ? std::string_view(argv[i]) : std::string_view{};
+        if (arg == "--version") {
+            std::printf("Vespera Hub %s\n", vespera::kEngineVersion.data());
+            return 0;
+        }
+    }
+    const auto runtime_root = hub_runtime_root();
+    auto templates = arg_value(argc, argv, "--templates=", {});
+    if (templates.empty()) templates = runtime_root / "templates";
+    auto result = arg_value(argc, argv, "--result=", {});
+    if (result.empty()) result = default_hub_result_file();
+    const auto explicit_editor = arg_value(argc, argv, "--editor=", {});
+    const bool launch_editor = !has_arg(argc, argv, "--no-launch-editor");
+    const auto ui_document = runtime_root / "ui" / "project_hub.rml";
 
     // Release-gate/CI mode deliberately reuses the exact same public template
     // creator as the Hub UI without opening a window. This makes fresh-checkout
@@ -299,7 +421,7 @@ int main(int argc, char** argv) {
     }
 
     vespera::Application application;
-    ProjectHubGame game(templates, result);
+    ProjectHubGame game(templates, result, find_editor_executable(explicit_editor), ui_document, launch_editor);
     vespera::ApplicationConfig config;
     config.title = std::string("Vespera Engine ") + std::string(vespera::kEngineVersion) + " - Project Hub";
     config.width = 1180;
@@ -307,9 +429,9 @@ int main(int argc, char** argv) {
     config.resizable = true;
     config.relative_mouse = false;
     config.escape_quits = true;
-    config.icon_path = "branding/vespera_icon_window.png";
-    config.startup_splash_image = "branding/vespera_splash.png";
-    config.startup_sound = "branding/vespera_logo_sting.wav";
+    config.icon_path = runtime_root / "branding" / "vespera_icon_window.png";
+    config.startup_splash_image = runtime_root / "branding" / "vespera_splash.png";
+    config.startup_sound = runtime_root / "branding" / "vespera_logo_sting.wav";
     config.startup_sound_volume = 0.85f;
     return application.run(game, config);
 }

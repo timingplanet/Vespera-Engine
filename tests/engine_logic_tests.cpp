@@ -8,12 +8,15 @@
 #include <vespera/assets/rml_asset_references.hpp>
 #include <vespera/input/input.hpp>
 #include <vespera/project/project.hpp>
+#include <vespera/render/render_backend.hpp>
 #include <vespera/render/view_frustum.hpp>
 #include <vespera/project/project_templates.hpp>
 #include <vespera/runtime/player_project.hpp>
 #include <vespera/ui/ui.hpp>
 #include <vespera/ui/ui_surface.hpp>
 #include <vespera/ui/rmlui_surface.hpp>
+#include <vespera/scene/scene_io.hpp>
+#include <vespera/assets/texture_importer.hpp>
 #include <vespera/scene/scene_stats.hpp>
 #include <vespera/scene/scene_hierarchy.hpp>
 #include <vespera/core/game.hpp>
@@ -176,6 +179,138 @@ void write_minimal_template(const fs::path& template_root, std::string_view fold
 
 } // namespace
 
+
+TEST_CASE("Resilient scene load preserves human-readable texture aliases") {
+    TempDirectory temp("texture-alias");
+    const fs::path scene_path = temp.path() / "alias.slscene";
+    write_text_file(scene_path,
+        "sectorline_scene 15\n"
+        "camera 0 1.65 -4 0 0 75 0.05 500\n"
+        "material \"Floor\" 1 1 1 1 \"Floor Tiles\" 1 1\n"
+        "end\n");
+
+    Scene scene;
+    TextureData imported;
+    imported.name = "floor_tiles";
+    imported.width = 2;
+    imported.height = 2;
+    imported.rgba8 = {
+        10, 20, 30, 255, 40, 50, 60, 255,
+        70, 80, 90, 255, 100, 110, 120, 255,
+    };
+    scene.world.add_texture(imported);
+
+    std::vector<std::string> warnings;
+    const auto loaded = load_scene_text_resilient(scene, scene_path, &warnings);
+    REQUIRE_MESSAGE(loaded, loaded.message);
+    CHECK(warnings.empty());
+    CHECK(loaded.message.find("matched imported asset names by normalized spelling") != std::string::npos);
+
+    REQUIRE(scene.world.textures().size() == 2);
+    const auto& alias = scene.world.textures()[1];
+    CHECK(alias.name == "Floor Tiles");
+    CHECK(alias.width == imported.width);
+    CHECK(alias.height == imported.height);
+    CHECK(alias.rgba8 == imported.rgba8);
+
+    REQUIRE(scene.world.materials().size() == 1);
+    CHECK(scene.world.materials()[0].texture == 1u);
+
+    // Saving must retain the serialized scene-facing alias rather than rewriting
+    // the reference to the catalog's filename stem.
+    const fs::path saved_path = temp.path() / "saved.slscene";
+    const auto saved = save_scene_text(scene, saved_path);
+    REQUIRE_MESSAGE(saved, saved.message);
+    CHECK(read_text_file(saved_path).find("\"Floor Tiles\"") != std::string::npos);
+}
+
+TEST_CASE("Resilient scene load does not guess ambiguous normalized texture names") {
+    TempDirectory temp("texture-alias-ambiguous");
+    const fs::path scene_path = temp.path() / "alias.slscene";
+    write_text_file(scene_path,
+        "sectorline_scene 15\n"
+        "camera 0 1.65 -4 0 0 75 0.05 500\n"
+        "material \"Floor\" 1 1 1 1 \"Floor Tiles\" 1 1\n"
+        "end\n");
+
+    Scene scene;
+    TextureData a = make_missing_texture_placeholder("floor_tiles");
+    TextureData b = make_missing_texture_placeholder("floor-tiles");
+    scene.world.add_texture(std::move(a));
+    scene.world.add_texture(std::move(b));
+
+    std::vector<std::string> warnings;
+    const auto loaded = load_scene_text_resilient(scene, scene_path, &warnings);
+    REQUIRE_MESSAGE(loaded, loaded.message);
+    REQUIRE(warnings.size() == 1);
+    CHECK(warnings[0].find("missing-texture checkerboard") != std::string::npos);
+    REQUIRE(scene.world.textures().size() == 3);
+    CHECK(scene.world.textures().back().name == "Floor Tiles");
+}
+
+TEST_CASE("Reference project editor-style texture registration resolves real scene textures") {
+    const fs::path source_root = fs::path(VESPERA_SOURCE_DIR);
+    const fs::path assets_root = source_root / "examples" / "reference_game" / "assets";
+    const fs::path scene_path = assets_root / "scenes" / "connected_sectors.slscene";
+
+    AssetCatalog catalog;
+    AssetCatalogRefreshOptions options;
+    options.write_metadata = false;
+    AssetCatalogRefreshReport report;
+    std::string error;
+    REQUIRE(catalog.refresh(assets_root, options, &report, &error));
+
+    Scene scene;
+    for (const auto* record : catalog.records_of_kind(AssetKind::Texture)) {
+        REQUIRE(record != nullptr);
+        const auto imported = import_texture(record->absolute_path, record->display_name);
+        if (imported && imported.texture.valid()) {
+            scene.world.add_texture(imported.texture);
+        } else {
+            // Match the editor's catalog-registration behavior for formats that
+            // are not decoded on the current platform (for example PNG on Linux).
+            scene.world.add_texture(make_missing_texture_placeholder(record->display_name));
+        }
+    }
+
+    std::vector<std::string> warnings;
+    const auto loaded = load_scene_text_resilient(scene, scene_path, &warnings);
+    REQUIRE_MESSAGE(loaded, loaded.message);
+    CHECK(warnings.empty());
+    CHECK(loaded.message.find("22 texture reference(s) matched imported asset names by normalized spelling") != std::string::npos);
+
+    const auto find_texture = [&](std::string_view name) -> const TextureData* {
+        for (const auto& texture : scene.world.textures()) {
+            if (texture.name == name) return &texture;
+        }
+        return nullptr;
+    };
+
+    const TextureData* floor = find_texture("Floor Tiles");
+    const TextureData* watcher = find_texture("Watcher D0 F0");
+    REQUIRE(floor != nullptr);
+    REQUIRE(watcher != nullptr);
+    CHECK(floor->width == 64u);
+    CHECK(floor->height == 64u);
+    CHECK(watcher->width == 64u);
+    CHECK(watcher->height == 64u);
+
+    for (const auto& material : scene.world.materials()) {
+        if (material.texture == kInvalidTexture) continue;
+        REQUIRE(material.texture < scene.world.textures().size());
+        const auto& texture = scene.world.textures()[material.texture];
+        CHECK(texture.width == 64u);
+        CHECK(texture.height == 64u);
+    }
+    for (const auto& clip : scene.sprite_clips) {
+        for (const TextureId texture_id : clip.textures) {
+            REQUIRE(texture_id < scene.world.textures().size());
+            const auto& texture = scene.world.textures()[texture_id];
+            CHECK(texture.width == 64u);
+            CHECK(texture.height == 64u);
+        }
+    }
+}
 
 TEST_CASE("RC startup branding defaults to four seconds") {
     ApplicationConfig config;
@@ -1620,4 +1755,26 @@ TEST_CASE("Performance Lab sample is a normal shared-player benchmark project") 
     const auto rml = read_text_file(root / "assets" / "ui" / "main.rml");
     CHECK(rml.find("update-ms") != std::string::npos);
     CHECK(rml.find("draw-calls") != std::string::npos);
+}
+
+
+TEST_CASE("renderer backend selection parses stable public names") {
+    using vespera::RenderBackendType;
+    CHECK(vespera::parse_render_backend_type("auto") == RenderBackendType::Automatic);
+    CHECK(vespera::parse_render_backend_type("DEFAULT") == RenderBackendType::Automatic);
+    CHECK(vespera::parse_render_backend_type("d3d12") == RenderBackendType::Direct3D12);
+    CHECK(vespera::parse_render_backend_type("DX12") == RenderBackendType::Direct3D12);
+    CHECK(vespera::parse_render_backend_type("vulkan") == RenderBackendType::Vulkan);
+    CHECK(vespera::parse_render_backend_type("VK") == RenderBackendType::Vulkan);
+    CHECK(vespera::parse_render_backend_type("null") == RenderBackendType::Null);
+    CHECK_FALSE(vespera::parse_render_backend_type("metal").has_value());
+
+    CHECK(vespera::render_backend_type_name(RenderBackendType::Automatic) == "Automatic");
+    CHECK(vespera::render_backend_type_name(RenderBackendType::Direct3D12) == "Direct3D 12");
+    CHECK(vespera::render_backend_type_name(RenderBackendType::Vulkan) == "Vulkan");
+    CHECK(vespera::render_backend_type_name(RenderBackendType::Null) == "Null");
+
+    auto null_backend = vespera::create_render_backend(RenderBackendType::Null);
+    REQUIRE(null_backend != nullptr);
+    CHECK(null_backend->name() == "Null Renderer");
 }

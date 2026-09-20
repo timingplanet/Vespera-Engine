@@ -3,7 +3,7 @@ using Vespera;
 namespace ReferenceGame.Scripts;
 
 // Proves a C# Component can be attached to a runtime-spawned Entity without a
-// full assembly reload, and dogfoods the 0.6.x enable/disable lifecycle.
+// full assembly reload, and exercises the enable/disable lifecycle.
 public sealed class RuntimeSpawnReporter : Component
 {
     public override void Start()

@@ -1,5 +1,191 @@
 # Changelog
 
+## 1.1.0
+
+- Promotes the validated 1.1 release-candidate line to the final Vespera Engine 1.1.0 release.
+- Keeps Windows x64 + Direct3D 12 as the production-supported renderer and default Windows path.
+- Ships Vulkan as an opt-in parity/testing backend on Windows and keeps Linux + Vulkan explicitly experimental.
+- Includes the hardened release/export workflow, portable or framework-dependent .NET packaging, public-source hygiene checks, installed-layout validation, release automation, and the final Windows RC regression gate.
+- Includes the final public documentation cleanup and Vespera community Discord link.
+- Preserves scene, prefab, project, package, stable component identifiers, MCP tool count, and managed ABI compatibility from the validated RC.6 baseline.
+- No post-RC engine, renderer, gameplay, scene-format, or scripting-runtime feature changes are included in this promotion.
+
+## 1.1.0-rc.6
+
+- Fixes the Windows RC harness cleanup order after a fully successful adversarial QA pass.
+- Stops the automation-controlled Release editor before deleting the disposable QA project so managed assemblies are no longer left locked by the editor process.
+- Adds retry-based disposable-directory cleanup for transient Windows file-lock release delays.
+- Preserves `-KeepEditor` as a debugging mode; full post-QA cleanup/public-staging validation is skipped when it is explicitly requested.
+- No runtime, renderer, scene-format, managed-ABI, or editor feature changes.
+
+## 1.1.0-rc.5
+
+- Fixed Release-editor C# build/recovery on source checkouts. `VesperaBuilder` discovery now prefers the requested configuration but falls back across Development/Release/Debug builder binaries, because the builder executable's own native configuration does not constrain which managed configuration it can compile.
+- Added editor-support coverage for builder fallback ordering and release-tooling regression checks for the managed-build discovery path.
+- This specifically addresses the RC.4 Windows adversarial failures where `managed_build_recovery` could observe the intentional compiler failure but could not rebuild after exact source restoration, and the subsequent MCP managed-build smoke failed for the same missing-builder reason.
+
+## 1.1.0-rc.4
+
+- Fixes the final staged-public hygiene failure exposed by the complete RC.3 Windows gate: public-source preparation now strips generated managed `bin`/`obj` directories and project-local `.vespera` caches created by C# build/Play workflows.
+- Extends public-release validation and release-tooling regression coverage so generated managed intermediates cannot silently re-enter staged source packages.
+- Cleans Windows/MSVC warning noise found in the RC.3 transcript: redundant `WIN32_LEAN_AND_MEAN` and Lua platform defines, a byte-fill conversion, a shadowed local, and an unreachable `constexpr` fallback.
+- Keeps the feature freeze in place: no scene/prefab/project/package format, managed ABI, MCP tool-count, editor structure, or renderer architecture changes.
+- RC.3's Windows log reached and passed behavioral tests, Release build, fresh-project portable export/startup, Emberlight Guild export/startup, and Performance Lab export/startup before failing only on generated managed intermediates in staged public-source hygiene.
+
+## 1.1.0-rc.3
+
+- Fixes the Windows behavioral-test gate exposed by RC.2: `test.ps1` now builds the complete `VESPERA_TESTS_ONLY` tree before running all registered CTest tests, instead of building only `vespera_engine_logic_tests` and leaving the editor-support/platform-process executables missing.
+- Persists complete CTest output to `build-tests/ctest-output.log` and replays it through PowerShell so failures are visible in the RC transcript even under Windows PowerShell 5.1.
+- Fixes `test-rc.ps1` automated-gate result handling by consuming success-stream output at the host; a failing gate can no longer return a non-empty output array that PowerShell mistakenly treats as a successful Boolean result.
+- Manual D3D12/Vulkan visual smokes therefore remain skipped after an automated RC failure, preserving the original failure instead of launching unrelated GUI checks.
+- Adds source/release-tooling regression contracts for behavioral-test completeness, CTest diagnostics, and scalar RC pass/fail handling.
+- Keeps renderer/editor/runtime implementation, serialized formats, MCP tool count, and managed ABI unchanged from RC.2.
+
+## 1.1.0-rc.2
+
+- Hardens the Windows RC test harness after RC.1 could collapse a staged-public validation failure into only a generic exit-code message.
+- Writes a full `test-rc.ps1` PowerShell transcript under the system temp directory and prints its path at start and on failure.
+- Runs direct public-source validation before GUI automation, then retains the stricter clean staged-public validation later in the gate.
+- Makes staged-public preparation replay the validator's complete stdout/stderr and retain the failed staged tree for inspection instead of hiding the underlying reason.
+- Clearly warns when the editor is being opened under automation so an automation-controlled window is not mistaken for a manual smoke test.
+- Prevents the release-tooling regression suite from creating `__pycache__` debris in an otherwise clean source tree.
+- Excludes versioned handoff notes and common desktop metadata from public-source staging while retaining the real source package contents.
+- Keeps renderer/editor architecture, serialized formats, MCP tool count, and managed ABI unchanged from RC.1.
+
+## 1.1.0-rc.1
+
+- Adds a top-level `test-rc.ps1` runner for the full Windows release-candidate check. It streams plain `[PASS]`, `[FAIL]`, and `[SKIP]` lines in PowerShell, runs the existing automated RC gate once, then launches D3D12/Vulkan editor and reference-game Release visual smokes for human pass/fail marking.
+- Makes `run-game.ps1` configuration-aware so Release RC testing launches the Release reference executable instead of silently falling back to Debug.
+- Propagates Debug/Release intent consistently through source-tree managed C# builds (`build.ps1`, `run.ps1`, `run-project.ps1`, `export.ps1`, and the RC managed stage) instead of compiling managed code as Debug during a native Release workflow.
+- Fixes the RC gate's post-QA public hygiene phase: it now validates a freshly staged public tree rather than rejecting the gate's own `build`/`build-tests` outputs.
+- Expands release-tooling/source-contract coverage for the user-facing RC runner, Release reference-game path, managed configuration propagation, and staged post-QA public validation.
+- Keeps renderer architecture, scene/prefab/project/package formats, MCP tool count, and managed ABI unchanged from alpha.23.
+
+## 1.1.0-alpha.23
+
+- Hardened the 1.1 cross-platform release gate without changing scene, prefab, project, package, or managed ABI formats.
+- Added deterministic installed-distribution root-name validation so renamed/mispackaged portable roots are rejected even when their internal manifest is otherwise valid.
+- Expanded release-tooling regression coverage to verify exact package versions and reject valid-looking distributions under the wrong archive root.
+- Added a dependency-light `test-linux.sh` gate for strict C++20 logic tests plus source, release-tooling, public-tree, and version validation.
+- Hardened Linux build/run/export scripts with tool/configuration/binary/project preflights and explicit Vulkan editor/runtime launching.
+- Added release CI source/public/tooling preflights and exact-version validation for Windows portable/installer and Linux portable artifacts.
+- Refreshed current 1.1 platform/boundary documentation and removed stale experimental-era comments from active CMake configuration.
+
+## 1.1.0-alpha.21 — distribution/release-path hardening
+
+- Made official release assembly discard stale native build trees before configuring so published binaries cannot inherit an old CMake cache or prior-checkout objects.
+- Hardened portable archive validation to require exactly one top-level distribution root and reject unsupported ZIP/TAR entry types.
+- Tightened distribution manifest validation so declared Hub/editor/player/builder/.NET paths must match the supported installed layout.
+- Generalized source-archive hygiene so arbitrary `build*`, `release-*`, and `dist-*` trees and symlinked files are excluded instead of relying on a short hard-coded build-directory list.
+- Strengthened Linux release-asset CI: the assembled distribution now launches the packaged Vulkan editor and the packaged exported game under software Vulkan/Xvfb, in addition to structural and Build Game validation.
+- Added release-tooling regression coverage for extra archive roots and arbitrary generated build-directory leakage.
+- Kept scene/prefab/project/package formats, managed ABI, renderer architecture, and normal Windows D3D12 runtime behavior unchanged.
+
+## 1.1.0-alpha.20 — release-tree consistency + documentation hardening
+
+- Cleans generated Python cache debris from the source package, removes a personal-name example from Markdown/site/search-index runtime-UI documentation, and extends public hygiene scans to HTML/JS/CSS surfaces.
+- Fixes the public-release validator to require the real `website/build-and-ship.html` page and aligns the formal experimental 2D product label with validation.
+- Synchronizes the 1.1 platform story across README/Markdown docs/website search surfaces: Windows x64 + D3D12 remains production-supported, Vulkan is an active preview, and Linux + Vulkan remains experimental pending broader validation.
+- Updates stale MCP/version-facing documentation and refreshes the roadmap/architecture overview around the already-implemented renderer, editor-host, automation, and distribution boundaries.
+- Preserves scene, prefab, project, package, stable component identifiers, MCP tool count, and managed ABI behavior; this checkpoint is release/tooling/documentation hardening rather than a runtime feature redesign.
+
+## 1.1.0-alpha.14 — Vulkan editor + prebuilt distribution hardening
+
+- Makes the Vulkan editor host selectable on Windows while keeping D3D12 as the default, so the same Scene/Game preview path used by Linux can be validated on real Windows Vulkan hardware.
+- Moves Vulkan world lighting to the checked-in per-pixel shader path and keeps render-pass/pipeline objects stable across ordinary swapchain resizes so the editor overlay remains compatible.
+- Moves writable editor state and C# Play output out of the Vespera installation directory into user/project-owned locations, including project-local `.vespera/managed`.
+- Expands the native VesperaBuilder path for Build C#, Build Game, Linux export, and source-tree launch helpers.
+- Adds reusable assembled-distribution validation plus CI smoke coverage for the installed Linux Hub/Editor and release-stage tool identities.
+- Continues the prebuilt Windows portable/installer and Linux tarball release pipeline; final cross-platform hardware validation is still pending.
+
+
+## 1.1.0-alpha.13 — platform, Vulkan, and distribution checkpoint
+
+- Adds native builder/distribution groundwork for prebuilt Vespera packages.
+- Adds installation-aware editor/Hub discovery and cross-platform process support.
+- Expands Linux build/export/CI paths and portable managed-host handling.
+- Begins the Vulkan per-pixel lighting and Linux/Vulkan editor-host integration.
+- This is a durable development checkpoint; Windows/Linux end-to-end validation is still pending.
+
+## 1.1.0-alpha.12 — editor UI language + public-surface cleanup
+
+- Removed stale milestone, QA, renderer-backend, and old Sectorline implementation labels from normal editor UI.
+- Simplified asset refresh/build diagnostics so the default Console and Project panel emphasize actionable issues instead of internal counters.
+- Cleaned Project Settings, Build Game, asset inspection, extension/MCP menus, and Play Mode status copy without changing serialized formats or runtime behavior.
+- Preserved advanced asset IDs and hashes behind clearer labels/technical details while keeping contributor and automation surfaces intact.
+- Renamed the reference-game `GameplayApiDogfood` component to the public-facing `GameplayShowcase` without changing its sample behavior.
+
+## 1.1.0-alpha.10 — editor hardening + UI cleanup
+
+- Validates the decomposed editor architecture on Windows after repairing extraction-boundary include/declaration issues.
+- Fixes editor Game-view texture alias resolution so friendly serialized names such as `Floor Tiles` resolve to catalog assets such as `floor_tiles` without rewriting saved scene names.
+- Hardens Play Mode relative-mouse release across Alt-Tab/focus loss by releasing capture on the window that originally acquired it.
+- Centralizes semantic editor colors and reduces per-panel one-off styling.
+- Reworks the workspace toolbar into clearer project, transport, and build/action groups and adds a compact bottom status bar for mode, dirty state, selection, assets, build, and automation state.
+- Cleans up Build/Tools menu ownership, Hierarchy and Console toolbars, Project browser headings, Inspector empty/asset states, Game-view runtime status, and Scene-view control grouping.
+- Preserves scene/project/prefab/package formats and the managed ABI.
+
+## 1.1.0-alpha.6 — lighting parity + Linux execution foundation
+
+- Fixes the major Vulkan/D3D12 brightness mismatch found in side-by-side Windows validation by preferring UNORM Vulkan swapchain formats, matching the D3D12 reference backbuffer transfer behavior instead of applying an extra sRGB presentation conversion.
+- Logs the selected Vulkan swapchain format/present mode for easier renderer-parity diagnosis.
+- Adds a cross-platform hostfxr loader for managed C# on Linux using `libhostfxr.so`/`dlopen` while preserving the existing Windows hosting path and Managed ABI v12.
+- Adds `tools/build-managed-runtime.py` for atomic cross-platform standalone managed staging without requiring PowerShell.
+- Adds `build-linux.sh`, `run-game-linux.sh`, and `run-hub-linux.sh` development helpers.
+- Adds `VESPERA_SMOKE_FRAMES` finite-run support so player/Hub/editor CI can launch real graphical paths and exit deterministically.
+- Expands Linux CI to build the full runtime/editor stack with RmlUi + Lua, stage C#, and smoke the Vulkan reference game, Project Hub, and editor shell under Xvfb + Mesa software Vulkan.
+- Linux runtime logs use `XDG_STATE_HOME/vespera/logs` (or `~/.local/state/vespera/logs`) when available.
+- D3D12 renderer code, serialized formats, package formats, and Managed ABI are unchanged.
+
+## 1.1.0-alpha.5 — Vulkan runtime parity pass
+
+- Added Vulkan rendering for authored primitive mesh entities using hierarchy-resolved transforms, materials, texture layers, and frustum visibility accounting.
+- Added animated billboard sprite rendering with authored clips, alpha blending, back-to-front ordering, frustum culling, and depth testing without transparent-pixel depth writes.
+- Added bounded point-light contribution and point-light telemetry on the Vulkan path. Lighting is evaluated per vertex on the CPU in this portability checkpoint; exact D3D12 per-pixel lighting parity remains follow-up work.
+- Added runtime UI packet rendering through a Vulkan UI atlas, descriptor set, alpha-blended pipeline, and non-depth-tested screen-space draw path. This covers both legacy runtime UI packets and RmlUi packets produced by the shared runtime surface.
+- Switched Vulkan dynamic geometry uploads to append within each frame so multiple scene/UI submissions do not overwrite earlier draw data before GPU submission.
+- Added separate opaque, transparent-sprite, and runtime-UI Vulkan pipelines while retaining the existing sampled texture-array material path.
+- Extended Vulkan renderer statistics for scene passes, primitive/sprite visibility and draw calls, active point lights, culled lights, and UI draw calls.
+- D3D12 remains the automatic Windows backend and its implementation is unchanged by this checkpoint.
+- Scene, prefab, project, package, `.vmeta`, legacy UI, and managed ABI formats are unchanged.
+
+## 1.1.0-alpha.4 — Vulkan world textures + reference-game backend selection
+
+- Added Vulkan world texture-array upload, shader-readable image transitions, a repeating point sampler, combined image-sampler descriptors, and descriptor binding for sector-world draws.
+- Extended the Vulkan bootstrap shaders/vertex payload with UV and texture-layer data; sampled texture color is multiplied by the existing renderer-neutral sector material tint.
+- Keeps layer zero as a white fallback and uses a visible checkerboard for invalid/mismatched texture-array layers, matching the established D3D12 world-texture behavior.
+- Added `run-game.ps1 -Renderer auto|d3d12|vulkan|null` and matching reference-game command-line parsing so Vulkan can be tested with the normal WASD/mouse gameplay controller instead of the shared-player static camera.
+- Preserves the existing Vulkan geometry/depth/swapchain path and the stable Windows D3D12 automatic backend.
+- No scene/project/prefab/package format or managed ABI changes.
+
+## 1.1.0-alpha.3 — Vulkan world geometry + depth
+
+- Adds Vulkan sector-world rendering through the shared `RenderBackend` path.
+- Adds a depth attachment per swapchain image with depth testing and depth writes enabled.
+- Adds bootstrap vertex/index buffers and indexed triangle submission for sector meshes.
+- Adds source-controlled bootstrap SPIR-V generation plus CI `spirv-val` validation.
+- Keeps textures/materials, sprites, primitive mesh entities, lighting, runtime UI, and Vulkan editor integration explicitly deferred to later renderer-parity checkpoints.
+- No serialized formats or managed ABI fields change.
+
+## 1.1.0-alpha.2 — Vulkan bootstrap / first presented frame
+
+- Adds a dynamically loaded Vulkan backend using SDL3 for loader and window-surface integration; no machine-wide Vulkan SDK is required at runtime.
+- Fetches pinned Khronos Vulkan-Headers at build time and keeps Vulkan optional through `VESPERA_VULKAN_RENDERER`.
+- Adds physical-device selection, graphics/present queue discovery, `VK_KHR_swapchain`, surface-format/present-mode selection, image views, a clear-only render pass, framebuffers, command buffers, semaphores, and fences.
+- Adds swapchain recreation for resize/out-of-date/suboptimal presentation and VSync policy changes.
+- Vulkan produces a synchronized clear/present frame through the shared `RenderBackend` API; scene geometry and runtime UI remain no-ops in this checkpoint.
+- Windows resolves `auto` to Direct3D 12; Linux resolves `auto` to Vulkan when the backend is compiled.
+- No serialized formats or managed ABI fields change.
+
+## 1.1.0-alpha.1 — renderer/backend portability foundation
+
+- Separates renderer selection/factory logic from the Direct3D 12 implementation so additional backends can coexist without changing scene/game APIs.
+- Adds stable backend identities for Automatic, Direct3D 12, Vulkan, and Null rendering.
+- Adds shared-player `--renderer auto|d3d12|vulkan|null` selection with clear rejection when a requested backend is not compiled into the build.
+- Keeps Direct3D 12 as the automatic Windows backend and retains the Null renderer as the non-GPU fallback used by portability work.
+- Adds GCC and Clang Linux CI coverage for the renderer-independent behavioral suite.
+- No project, scene, prefab, package, or managed ABI format changes.
+
 ## 1.0.0 — Windows / D3D12 production release tree
 
 - Promoted the Windows-validated `1.0.0-rc.1` baseline into the exact 1.0 public release tree; no scene/project/prefab/package format or managed ABI bump is introduced here.
@@ -114,8 +300,6 @@
 - Added reusable scene scale statistics and behavioral regression coverage.
 - Added optional `run-qa.ps1 -Stress`: authors 150 primitives through the public VAP command path, mixes colliders/lights, enters Play, captures telemetry, stops, and cleans the scene back to its original entity count.
 - 0.10.0 remains feature-frozen; 0.11.0 begins the pre-RC reliability/scale phase.
-
-# Vespera Engine changelog
 
 ## 0.10.0 final — scripting/UI convergence freeze
 
@@ -388,7 +572,7 @@
 - Made editor C# build diagnostics per-invocation so a restored source file cannot replay a previous compiler failure.
 - MCP now separates the 2-second connect timeout from command response timeouts; managed builds, QA scenarios and exports can finish without being mislabeled as an unreachable editor.
 - Asset fallback repair MCP results now include warning messages as well as the warning count.
-- Added root agent-QA guidance so fresh checkouts are immediately ready for adversarial automation testing.
+- Added project-level QA guidance for repeatable adversarial automation testing.
 - Updated the reference project product version to `0.9.5-reference`.
 - Engine/runtime feature version remains 0.9.5.
 
@@ -606,8 +790,6 @@
 
 - Closed out the 0.7.x asset/project foundation with .vmeta v3 texture import intent, font-source validation, runtime asset invalidation groundwork, safe-delete preflight, and deterministic build asset index output.
 - Recorded the Unity-familiar production-editor workflow direction for 0.8.x while retaining compact Dear ImGui and Vespera-specific branding.
-
-# Vespera Engine changelog
 
 ## 0.7.8
 

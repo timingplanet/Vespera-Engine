@@ -9,8 +9,9 @@
 
 namespace vespera::editor {
 
-// 0.8.10 establishes the host-side contract only. Dynamic DLL loading is
-// intentionally deferred until the command surface has been dogfooded in 0.9.x.
+// The host-side extension contract is established and used by Vespera's
+// semantic command surface. External dynamic plug-in loading remains disabled
+// during the 1.1 alpha while the contributor-facing ownership boundaries settle.
 // Extensions must register semantic commands; they do not receive raw Scene,
 // renderer, undo-stack, CLR, or native pointer access through this API.
 inline constexpr std::uint32_t kEditorExtensionApiVersion = 1;

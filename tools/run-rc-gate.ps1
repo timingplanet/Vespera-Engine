@@ -11,6 +11,9 @@ param(
 
 $ErrorActionPreference = "Stop"
 $Root = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
+$VersionText = Get-Content -LiteralPath (Join-Path $Root "CMakeLists.txt") -Raw
+if ($VersionText -notmatch 'set\(VESPERA_VERSION_LABEL\s+"([^"]+)"\)') { throw "Could not read VESPERA_VERSION_LABEL." }
+$VersionLabel = $Matches[1]
 $ReferenceSourceDirectory = Join-Path $Root "examples\reference_game"
 $QaReferenceDirectory = Join-Path $Root "examples\__vespera_rc_qa_reference"
 $ReferenceProject = Join-Path $QaReferenceDirectory "VesperaReference.vesperaproject"
@@ -21,6 +24,7 @@ $ManagedHelper = Join-Path $Root "tools\build-managed-editor.ps1"
 $ManagedStage = Join-Path $Root "build\managed\rc-reference"
 $ManagedDiagnostics = Join-Path $ManagedStage "Vespera.ManagedBuildDiagnostics.txt"
 $EditorManaged = Join-Path $EditorDirectory "managed"
+$PublicStage = Join-Path ([System.IO.Path]::GetTempPath()) ("Vespera-RC-Public-{0}" -f $PID)
 $EditorProcess = $null
 
 function Invoke-Step([string]$Title, [scriptblock]$Body) {
@@ -55,6 +59,35 @@ function Test-TcpPort([string]$HostName, [int]$Port, [int]$TimeoutMilliseconds =
     }
 }
 
+
+function Stop-EditorAutomationProcess([switch]$RespectKeepEditor) {
+    if (-not $script:EditorProcess) { return }
+    if ($RespectKeepEditor -and $KeepEditor) { return }
+    try {
+        $script:EditorProcess.Refresh()
+        if (-not $script:EditorProcess.HasExited) {
+            Stop-Process -Id $script:EditorProcess.Id -Force -ErrorAction Stop
+            if (-not $script:EditorProcess.WaitForExit(5000)) {
+                throw "Timed out waiting for the Vespera Editor process to exit."
+            }
+        }
+    } finally {
+        $script:EditorProcess = $null
+    }
+}
+
+function Remove-DirectoryWithRetry([string]$Path, [int]$Attempts = 12, [int]$DelayMilliseconds = 250) {
+    if (-not (Test-Path -LiteralPath $Path)) { return }
+    for ($Attempt = 1; $Attempt -le $Attempts; $Attempt++) {
+        try {
+            Remove-Item -LiteralPath $Path -Recurse -Force -ErrorAction Stop
+            return
+        } catch {
+            if ($Attempt -eq $Attempts) { throw }
+            Start-Sleep -Milliseconds $DelayMilliseconds
+        }
+    }
+}
 function Wait-AutomationPort([System.Diagnostics.Process]$Process, [int]$Port, [int]$TimeoutSeconds = 45) {
     $Deadline = (Get-Date).AddSeconds($TimeoutSeconds)
     while ((Get-Date) -lt $Deadline) {
@@ -77,9 +110,9 @@ try {
         if ($LASTEXITCODE -ne 0) { throw "Source validation failed with exit code $LASTEXITCODE." }
     }
 
-    Invoke-Step "Public release hygiene" {
-        & $Python (Join-Path $Root "tools\validate_public_release.py")
-        if ($LASTEXITCODE -ne 0) { throw "Public release validation failed with exit code $LASTEXITCODE." }
+    Invoke-Step "RC public source hygiene" {
+        & $Python (Join-Path $Root "tools\validate_public_release.py") --expect-version $VersionLabel
+        if ($LASTEXITCODE -ne 0) { throw "Public source validation failed with exit code $LASTEXITCODE." }
     }
 
     if (-not $SkipReleaseGate) {
@@ -89,6 +122,13 @@ try {
             } else {
                 & (Join-Path $Root "tools\run-release-gate.ps1")
             }
+        }
+    }
+
+    Invoke-Step "Staged public release hygiene" {
+        & $Python (Join-Path $Root "tools\prepare-public-release.py") $PublicStage --overwrite
+        if ($LASTEXITCODE -ne 0) {
+            throw "Staged public release validation failed with exit code $LASTEXITCODE. The validator output above and the RC transcript contain the exact reason."
         }
     }
 
@@ -111,6 +151,7 @@ try {
         New-Item -ItemType Directory -Force -Path $ManagedStage | Out-Null
         & $ManagedHelper `
             -Project $ReferenceManagedProject `
+            -Configuration Release `
             -GameAssemblyName "ReferenceGame.Scripts" `
             -OutputDir $ManagedStage `
             -DiagnosticsFile $ManagedDiagnostics `
@@ -127,6 +168,7 @@ try {
     $env:VESPERA_SOURCE_ROOT = $Root
 
     Invoke-Step "Start Release editor automation" {
+        Write-Host "The Vespera Editor will open for automated QA. Do not interact with or close it; this script controls it through localhost automation." -ForegroundColor Yellow
         $EditorArgs = @("`"$ReferenceProject`"", "--automation-port=$AutomationPort")
         $script:EditorProcess = Start-Process -FilePath $Editor -ArgumentList $EditorArgs -WorkingDirectory $EditorDirectory -PassThru
         Wait-AutomationPort $script:EditorProcess $AutomationPort
@@ -156,27 +198,38 @@ try {
         if ($LASTEXITCODE -ne 0) { throw "Post-QA source validation failed with exit code $LASTEXITCODE." }
     }
 
-    # Public-release hygiene is intentionally a preflight check. The RC gate itself
-    # creates build/, build-tests/, managed obj/bin output, runtime logs, and a
-    # disposable QA project, so rerunning the distributable-tree hygiene scanner
-    # after QA would reject the expected products of this gate. Post-QA integrity
-    # is covered by validate_source.py above; the disposable QA project is removed
-    # in the finally block below.
+    if ($KeepEditor) {
+        Write-Host "`n== Keep Release editor automation ==" -ForegroundColor Cyan
+        Write-Host "-KeepEditor was supplied; leaving the automation editor and disposable QA project in place for debugging." -ForegroundColor Yellow
+        Write-Host "Post-QA staged public release hygiene is skipped in this debugging mode." -ForegroundColor Yellow
+    } else {
+        Invoke-Step "Stop Release editor automation" {
+            Stop-EditorAutomationProcess
+        }
 
-    Write-Host "`nVespera 1.0.0 RC gate PASSED." -ForegroundColor Green
+        Invoke-Step "Remove disposable RC QA project" {
+            Remove-DirectoryWithRetry $QaReferenceDirectory
+        }
+
+        Invoke-Step "RC post-QA staged public release hygiene" {
+            & $Python (Join-Path $Root "tools\prepare-public-release.py") $PublicStage --overwrite
+            if ($LASTEXITCODE -ne 0) {
+                throw "Post-QA staged public release validation failed with exit code $LASTEXITCODE. The validator output above and the RC transcript contain the exact reason."
+            }
+        }
+    }
+
+    Write-Host "`nVespera $VersionLabel RC gate PASSED." -ForegroundColor Green
     Write-Host "One Release build covered the public release path; the same build then passed managed recovery, repeated Play/Stop, scene switching, asset move/save/reopen, runtime telemetry, Release exported-runtime automation, MCP managed build and scale stress."
 } finally {
     Set-Location $Root
-    if (Test-Path -LiteralPath $QaReferenceDirectory) {
-        Remove-Item -LiteralPath $QaReferenceDirectory -Recurse -Force -ErrorAction SilentlyContinue
+    if (-not $KeepEditor) {
+        try { Stop-EditorAutomationProcess } catch {}
+        if (Test-Path -LiteralPath $QaReferenceDirectory) {
+            try { Remove-DirectoryWithRetry $QaReferenceDirectory -Attempts 8 -DelayMilliseconds 250 } catch {}
+        }
     }
-    if ($EditorProcess -and -not $KeepEditor) {
-        try {
-            $EditorProcess.Refresh()
-            if (-not $EditorProcess.HasExited) {
-                Stop-Process -Id $EditorProcess.Id -Force -ErrorAction SilentlyContinue
-                $EditorProcess.WaitForExit(3000) | Out-Null
-            }
-        } catch {}
+    if (Test-Path -LiteralPath $PublicStage) {
+        Remove-Item -LiteralPath $PublicStage -Recurse -Force -ErrorAction SilentlyContinue
     }
 }

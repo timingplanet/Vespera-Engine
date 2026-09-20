@@ -30,7 +30,7 @@ private:
 
 } // namespace
 
-std::unique_ptr<RenderBackend> create_default_render_backend() {
+std::unique_ptr<RenderBackend> create_null_render_backend() {
     return std::make_unique<NullRenderer>();
 }
 

@@ -30,7 +30,9 @@
 #include <vector>
 
 #ifdef _WIN32
+#ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
+#endif
 #include <windows.h>
 #endif
 
@@ -101,6 +103,7 @@ void show_runtime_error_dialog(std::string_view) {}
 struct PlayerArguments {
     std::filesystem::path project;
     std::filesystem::path managed_directory;
+    vespera::RenderBackendType renderer = vespera::RenderBackendType::Automatic;
 };
 
 bool read_path_argument(int& index, int argc, char** argv, std::string_view name, std::filesystem::path& out) {
@@ -123,7 +126,7 @@ std::optional<PlayerArguments> parse_arguments(int argc, char** argv, std::strin
     for (int i = 1; i < argc; ++i) {
         const std::string_view arg = argv[i] ? std::string_view(argv[i]) : std::string_view{};
         if (arg == "--help" || arg == "-h") {
-            error = "usage: vespera_player [--project <file.vesperaproject>] [--managed-dir <dir>]";
+            error = "usage: vespera_player [--project <file.vesperaproject>] [--managed-dir <dir>] [--renderer <auto|d3d12|vulkan|null>]";
             return std::nullopt;
         }
         if (arg == "--project" && i + 1 >= argc) {
@@ -134,8 +137,24 @@ std::optional<PlayerArguments> parse_arguments(int argc, char** argv, std::strin
             error = "--managed-dir requires a path";
             return std::nullopt;
         }
+        if (arg == "--renderer" && i + 1 >= argc) {
+            error = "--renderer requires auto, d3d12, vulkan, or null";
+            return std::nullopt;
+        }
         if (read_path_argument(i, argc, argv, "--project", result.project)) continue;
         if (read_path_argument(i, argc, argv, "--managed-dir", result.managed_directory)) continue;
+        if (arg == "--renderer" || arg.starts_with("--renderer=")) {
+            std::string_view value;
+            if (arg == "--renderer") value = argv[++i] ? std::string_view(argv[i]) : std::string_view{};
+            else value = arg.substr(std::string_view("--renderer=").size());
+            const auto parsed = vespera::parse_render_backend_type(value);
+            if (!parsed) {
+                error = "unknown renderer backend: " + std::string(value) + " (expected auto, d3d12, vulkan, or null)";
+                return std::nullopt;
+            }
+            result.renderer = *parsed;
+            continue;
+        }
         error = "unknown Vespera player argument: " + std::string(arg);
         return std::nullopt;
     }
@@ -159,6 +178,12 @@ std::filesystem::path default_runtime_log_path(const std::filesystem::path& exec
 #ifdef _WIN32
     if (const char* local = std::getenv("LOCALAPPDATA"); local && *local) {
         root = std::filesystem::path(local) / "Vespera" / "Logs";
+    }
+#else
+    if (const char* state = std::getenv("XDG_STATE_HOME"); state && *state) {
+        root = std::filesystem::path(state) / "vespera" / "logs";
+    } else if (const char* home = std::getenv("HOME"); home && *home) {
+        root = std::filesystem::path(home) / ".local" / "state" / "vespera" / "logs";
     }
 #endif
     if (root.empty()) root = executable_path.parent_path() / "logs";
@@ -504,6 +529,7 @@ int run_player(int argc, char** argv) {
     config.relative_mouse = project.relative_mouse;
     config.escape_quits = project.escape_quits;
     config.vsync = project.vsync;
+    config.renderer = arguments->renderer;
     std::filesystem::path project_icon;
     if (!project.game_icon.empty()) {
         project_icon = project.resolve_asset(project.game_icon);
@@ -521,6 +547,13 @@ int run_player(int argc, char** argv) {
 }
 
 int main(int argc, char** argv) {
+    for (int i = 1; i < argc; ++i) {
+        const std::string_view arg = argv[i] ? std::string_view(argv[i]) : std::string_view{};
+        if (arg == "--version") {
+            std::printf("Vespera Player %s\n", vespera::kEngineVersion.data());
+            return 0;
+        }
+    }
     try {
         return run_player(argc, argv);
     } catch (const std::exception& exception) {

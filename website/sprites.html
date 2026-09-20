@@ -1,0 +1,28 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Create sprite entities, author sprite clips/sheets, control animation from C#, and understand scene-owned clips."><title>Sprites &amp; Animation — Vespera Engine Docs</title><link rel="icon" href="assets/vespera_icon.png"><link rel="stylesheet" href="styles.css"></head><body><header class="topbar"><a class="brand" href="index.html"><img src="assets/vespera_icon.png" alt=""><span>Vespera Engine</span><b>Docs</b></a><button class="search-button" type="button" data-search-open><span>Search docs</span><kbd>Ctrl K</kbd></button></header><div class="wiki-layout"><aside class="left-rail"><div class="rail-scroll"><nav class="doc-nav" aria-label="Documentation"><div class="nav-group"><div class="nav-group-title">Start here</div><a href="index.html">Documentation Home</a><a href="getting-started.html">Getting Started</a><a href="first-game.html">Your First Game</a><a href="project-structure.html">Project Structure</a><a href="file-types.html">File Types</a><a href="editor.html">Editor Guide</a></div><div class="nav-group"><div class="nav-group-title">World &amp; content</div><a href="scenes-entities.html">Scenes &amp; Entities</a><a href="prefabs.html">Prefabs</a><a href="asset-pipeline.html">Asset Pipeline</a><a href="materials-textures.html">Textures &amp; Materials</a><a href="sprites.html" aria-current="page">Sprites &amp; Animation</a><a href="audio.html">Audio</a></div><div class="nav-group"><div class="nav-group-title">Gameplay</div><a href="input.html">Input</a><a href="managed-scripting.html">C# Scripting</a><a href="gameplay-api.html">Gameplay API</a><a href="lua-scripting.html">Lua Scripting</a></div><div class="nav-group"><div class="nav-group-title">UI &amp; 2D</div><a href="rmlui.html">RmlUi</a><a href="runtime-ui.html">Runtime UI API</a><a href="two-d-foundation.html">2D / UI Foundation</a></div><div class="nav-group"><div class="nav-group-title">Build &amp; help</div><a href="build-and-ship.html">Build &amp; Ship</a><a href="exporting.html">Exporting Reference</a><a href="troubleshooting.html">Troubleshooting</a><a href="limitations.html">Current Limitations</a></div><div class="nav-group"><div class="nav-group-title">Advanced</div><a href="scene-format.html">Scene Text Format</a><a href="extensions.html">Editor Extensions</a><a href="automation-mcp.html">Automation / MCP</a></div></nav></div></aside><main class="article-wrap"><article class="article"><div class="doc-breadcrumb"><a href="index.html">Documentation</a><span>›</span>Sprites &amp; Animation</div><h1 id="sprites-animation">Sprites &amp; Animation</h1>
+<p>Vespera supports billboard-style sprite rendering alongside mesh content. A Sprite Renderer controls size, tint, animation clip, speed, time offset, and paused state.</p>
+<h2 id="create-a-sprite-entity">Create a sprite entity</h2>
+<p>Use <strong>Create Sprite Entity</strong> from the editor. Select it and configure the Sprite Renderer in the Inspector.</p>
+<p>Sprite animation can use authored sprite clips. The editor can create and edit Sprite Clip assets/resources, and the Asset Catalog recognizes <code>.slspriteclip</code> and <code>.slspritesheet</code> files.</p>
+<h2 id="c-control">C# control</h2>
+<pre><code class="language-csharp">var sprite = Entity.SpriteRenderer;
+if (sprite is not null)
+{
+    sprite.Size = new Vector2(1.5f, 2.0f);
+    sprite.Tint = new Color(1, 1, 1, 1);
+    sprite.Play("Run", speed: 1.25f);
+}
+</code></pre>
+<p>Animation helpers include:</p>
+<pre><code class="language-csharp">sprite.Pause();
+sprite.Resume();
+sprite.Restart();
+sprite.Stop();
+</code></pre>
+<p><code>Play</code> sets the clip and speed and can restart animation time.</p>
+<h2 id="sprite-sheets">Sprite sheets</h2>
+<p>A <code>.slspritesheet</code> descriptor references a source texture. Keep the texture and sheet in the Asset Catalog so the dependency system can package them together.</p>
+<h2 id="scene-resources">Scene resources</h2>
+<p>Scene Text can also contain sprite clip resources referenced by Sprite Renderer components. When working with those clips, treat their names as scene-local animation resources and keep names unique enough to be clear in the editor.</p>
+<h2 id="moving-sprite-assets">Moving sprite assets</h2>
+<p>Sprite sheets and clips are dependency-aware catalog assets. Use controlled Move / Rename operations for referenced assets so stable identities and fallback paths can be repaired.</p>
+</article></main><aside class="right-rail"><div class="toc"><div class="toc-title">On this page</div><a class="h2" href="#create-a-sprite-entity">Create a sprite entity</a><a class="h2" href="#c-control">C# control</a><a class="h2" href="#sprite-sheets">Sprite sheets</a><a class="h2" href="#scene-resources">Scene resources</a><a class="h2" href="#moving-sprite-assets">Moving sprite assets</a></div></aside></div><footer class="site-footer"><span>Vespera Engine documentation</span><span>MIT License · Timingplanet</span></footer><div class="search-modal" data-search-modal hidden><div class="search-panel" role="dialog" aria-modal="true"><div class="search-row"><input data-search-input type="search" placeholder="Search Vespera documentation…" autocomplete="off"><button data-search-close>Close</button></div><div class="search-results" data-search-results></div></div></div><script src="search-index.js"></script><script src="site.js"></script></body></html>

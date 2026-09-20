@@ -1,0 +1,45 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Use Build Game, choose Debug/Development/Release, configure .NET deployment, and understand the packaged result."><title>Build &amp; Ship — Vespera Engine Docs</title><link rel="icon" href="assets/vespera_icon.png"><link rel="stylesheet" href="styles.css"></head><body><header class="topbar"><a class="brand" href="index.html"><img src="assets/vespera_icon.png" alt=""><span>Vespera Engine</span><b>Docs</b></a><button class="search-button" type="button" data-search-open><span>Search docs</span><kbd>Ctrl K</kbd></button></header><div class="wiki-layout"><aside class="left-rail"><div class="rail-scroll"><nav class="doc-nav" aria-label="Documentation"><div class="nav-group"><div class="nav-group-title">Start here</div><a href="index.html">Documentation Home</a><a href="getting-started.html">Getting Started</a><a href="first-game.html">Your First Game</a><a href="project-structure.html">Project Structure</a><a href="file-types.html">File Types</a><a href="editor.html">Editor Guide</a></div><div class="nav-group"><div class="nav-group-title">World &amp; content</div><a href="scenes-entities.html">Scenes &amp; Entities</a><a href="prefabs.html">Prefabs</a><a href="asset-pipeline.html">Asset Pipeline</a><a href="materials-textures.html">Textures &amp; Materials</a><a href="sprites.html">Sprites &amp; Animation</a><a href="audio.html">Audio</a></div><div class="nav-group"><div class="nav-group-title">Gameplay</div><a href="input.html">Input</a><a href="managed-scripting.html">C# Scripting</a><a href="gameplay-api.html">Gameplay API</a><a href="lua-scripting.html">Lua Scripting</a></div><div class="nav-group"><div class="nav-group-title">UI &amp; 2D</div><a href="rmlui.html">RmlUi</a><a href="runtime-ui.html">Runtime UI API</a><a href="two-d-foundation.html">2D / UI Foundation</a></div><div class="nav-group"><div class="nav-group-title">Build &amp; help</div><a href="build-and-ship.html" aria-current="page">Build &amp; Ship</a><a href="exporting.html">Exporting Reference</a><a href="troubleshooting.html">Troubleshooting</a><a href="limitations.html">Current Limitations</a></div><div class="nav-group"><div class="nav-group-title">Advanced</div><a href="scene-format.html">Scene Text Format</a><a href="extensions.html">Editor Extensions</a><a href="automation-mcp.html">Automation / MCP</a></div></nav></div></aside><main class="article-wrap"><article class="article"><div class="doc-breadcrumb"><a href="index.html">Documentation</a><span>›</span>Build &amp; Ship</div><h1 id="build-ship">Build &amp; Ship</h1>
+<p>For normal game development, build from the editor with <strong>Build → Build Game…</strong> (<code>Ctrl+Shift+B</code>).</p>
+<p>The build flow saves project state, validates required content, builds project C# when configured, builds/uses the required native runtime target, computes the package closure, and writes a standalone folder.</p>
+<h2 id="build-configurations">Build configurations</h2>
+<p>Use the configuration that matches what you are doing:</p>
+<ul>
+<li><strong>Debug</strong> — development/debugging build with debug-oriented native configuration.</li>
+<li><strong>Development</strong> — optimized development build (<code>RelWithDebInfo</code> native configuration) with project diagnostics when enabled.</li>
+<li><strong>Release</strong> — shipping configuration.</li>
+</ul>
+<p>The Build menu also exposes direct Development, Build &amp; Run Development, and Release actions.</p>
+<h2 id="project-packaging-settings">Project packaging settings</h2>
+<p>Open <strong>Project Settings → Build &amp; Package</strong> to configure:</p>
+<ul>
+<li>Company</li>
+<li>Product Version</li>
+<li>Package Name</li>
+<li>Executable Name</li>
+<li>Build Output Directory</li>
+<li>Managed Deployment</li>
+</ul>
+<h3 id="framework-dependent-net">Framework-dependent .NET</h3>
+<p>The package expects a compatible .NET runtime to exist on the target machine.</p>
+<h3 id="portable-net-bundled">Portable (.NET bundled)</h3>
+<p>Vespera copies a private compatible .NET runtime beside the game so the package does not depend on a system-wide .NET installation.</p>
+<p>Use Portable when you want the most self-contained C# deployment.</p>
+<h2 id="what-gets-packaged">What gets packaged</h2>
+<p>Vespera starts from project startup assets and known dependencies. It also includes explicit build roots you configure for content loaded dynamically from code.</p>
+<p>The package contains the runtime executable renamed to the project's executable name, required project content, managed output when used, deployment/runtime support files, branding/legal support files, and generated package reports.</p>
+<h2 id="test-the-package">Test the package</h2>
+<p>Do not stop at “the build completed.” Launch the executable from the packaged folder and test:</p>
+<ul>
+<li>startup scene;</li>
+<li>startup UI;</li>
+<li>C# and/or Lua startup;</li>
+<li>input;</li>
+<li>scene changes;</li>
+<li>sounds and dynamically loaded assets;</li>
+<li>saves;</li>
+<li>clean exit.</li>
+</ul>
+<p>A package problem is easier to diagnose while the project context is still fresh.</p>
+<h2 id="source-tree-cli-export">Source-tree CLI export</h2>
+<p>For automation or source-checkout workflows, <code>export.ps1</code> exposes the same packaging path. See <strong>Exporting Reference</strong> for parameters and examples.</p>
+</article></main><aside class="right-rail"><div class="toc"><div class="toc-title">On this page</div><a class="h2" href="#build-configurations">Build configurations</a><a class="h2" href="#project-packaging-settings">Project packaging settings</a><a class="h3" href="#framework-dependent-net">Framework-dependent .NET</a><a class="h3" href="#portable-net-bundled">Portable (.NET bundled)</a><a class="h2" href="#what-gets-packaged">What gets packaged</a><a class="h2" href="#test-the-package">Test the package</a><a class="h2" href="#source-tree-cli-export">Source-tree CLI export</a></div></aside></div><footer class="site-footer"><span>Vespera Engine documentation</span><span>MIT License · Timingplanet</span></footer><div class="search-modal" data-search-modal hidden><div class="search-panel" role="dialog" aria-modal="true"><div class="search-row"><input data-search-input type="search" placeholder="Search Vespera documentation…" autocomplete="off"><button data-search-close>Close</button></div><div class="search-results" data-search-results></div></div></div><script src="search-index.js"></script><script src="site.js"></script></body></html>

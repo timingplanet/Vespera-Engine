@@ -1,0 +1,38 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Import audio, create .slaudio clips, play one-shots/voices/spatial audio, follow entities, and set the listener."><title>Audio — Vespera Engine Docs</title><link rel="icon" href="assets/vespera_icon.png"><link rel="stylesheet" href="styles.css"></head><body><header class="topbar"><a class="brand" href="index.html"><img src="assets/vespera_icon.png" alt=""><span>Vespera Engine</span><b>Docs</b></a><button class="search-button" type="button" data-search-open><span>Search docs</span><kbd>Ctrl K</kbd></button></header><div class="wiki-layout"><aside class="left-rail"><div class="rail-scroll"><nav class="doc-nav" aria-label="Documentation"><div class="nav-group"><div class="nav-group-title">Start here</div><a href="index.html">Documentation Home</a><a href="getting-started.html">Getting Started</a><a href="first-game.html">Your First Game</a><a href="project-structure.html">Project Structure</a><a href="file-types.html">File Types</a><a href="editor.html">Editor Guide</a></div><div class="nav-group"><div class="nav-group-title">World &amp; content</div><a href="scenes-entities.html">Scenes &amp; Entities</a><a href="prefabs.html">Prefabs</a><a href="asset-pipeline.html">Asset Pipeline</a><a href="materials-textures.html">Textures &amp; Materials</a><a href="sprites.html">Sprites &amp; Animation</a><a href="audio.html" aria-current="page">Audio</a></div><div class="nav-group"><div class="nav-group-title">Gameplay</div><a href="input.html">Input</a><a href="managed-scripting.html">C# Scripting</a><a href="gameplay-api.html">Gameplay API</a><a href="lua-scripting.html">Lua Scripting</a></div><div class="nav-group"><div class="nav-group-title">UI &amp; 2D</div><a href="rmlui.html">RmlUi</a><a href="runtime-ui.html">Runtime UI API</a><a href="two-d-foundation.html">2D / UI Foundation</a></div><div class="nav-group"><div class="nav-group-title">Build &amp; help</div><a href="build-and-ship.html">Build &amp; Ship</a><a href="exporting.html">Exporting Reference</a><a href="troubleshooting.html">Troubleshooting</a><a href="limitations.html">Current Limitations</a></div><div class="nav-group"><div class="nav-group-title">Advanced</div><a href="scene-format.html">Scene Text Format</a><a href="extensions.html">Editor Extensions</a><a href="automation-mcp.html">Automation / MCP</a></div></nav></div></aside><main class="article-wrap"><article class="article"><div class="doc-breadcrumb"><a href="index.html">Documentation</a><span>›</span>Audio</div><h1 id="audio">Audio</h1>
+<p>Vespera's Asset Catalog recognizes WAV, OGG, and MP3 source files. The authored <code>.slaudio</code> clip descriptor currently resolves a WAV source asset.</p>
+<h2 id="add-audio-to-the-project">Add audio to the project</h2>
+<p>Place audio beneath the project's asset root and refresh the Asset Catalog if it was added externally. For an authored clip descriptor, create/configure a <code>.slaudio</code> that points at the source asset.</p>
+<h2 id="play-a-one-shot">Play a one-shot</h2>
+<pre><code class="language-csharp">Audio.PlayOneShot("audio/click.wav", 0.8f);
+</code></pre>
+<p>With an <code>AssetReference</code>:</p>
+<pre><code class="language-csharp">var click = Assets.FromPath("audio/click.wav");
+Audio.PlayOneShot(click, 0.8f);
+</code></pre>
+<h2 id="play-and-control-a-voice">Play and control a voice</h2>
+<pre><code class="language-csharp">var music = Audio.Play("audio/music.wav", volume: 0.6f, loop: true);
+
+// Later:
+music?.Stop();
+</code></pre>
+<p><code>Audio.MasterVolume</code> controls the global level, and <code>Audio.StopAll()</code> stops active managed voices.</p>
+<h2 id="spatial-audio">Spatial audio</h2>
+<pre><code class="language-csharp">var source = Audio.PlaySpatial(
+    "audio/hum.wav",
+    Entity.Position,
+    volume: 1.0f,
+    loop: true,
+    minDistance: 1.0f,
+    maxDistance: 18.0f);
+
+source?.Follow(Entity);
+</code></pre>
+<p>A managed <code>AudioSource</code> can update its position or follow an entity. Stop the source when the effect should end.</p>
+<h2 id="listener">Listener</h2>
+<p>Use the camera as the listener:</p>
+<pre><code class="language-csharp">AudioListener.UseCamera();
+</code></pre>
+<p>Or assign <code>AudioListener.Position</code> directly for a custom listener.</p>
+<h2 id="packaging">Packaging</h2>
+<p>Audio participates in the Asset Catalog and dependency closure. If a sound is loaded only from code and no serialized dependency points to it, add it as an explicit build include so it cannot be omitted from the package.</p>
+</article></main><aside class="right-rail"><div class="toc"><div class="toc-title">On this page</div><a class="h2" href="#add-audio-to-the-project">Add audio to the project</a><a class="h2" href="#play-a-one-shot">Play a one-shot</a><a class="h2" href="#play-and-control-a-voice">Play and control a voice</a><a class="h2" href="#spatial-audio">Spatial audio</a><a class="h2" href="#listener">Listener</a><a class="h2" href="#packaging">Packaging</a></div></aside></div><footer class="site-footer"><span>Vespera Engine documentation</span><span>MIT License · Timingplanet</span></footer><div class="search-modal" data-search-modal hidden><div class="search-panel" role="dialog" aria-modal="true"><div class="search-row"><input data-search-input type="search" placeholder="Search Vespera documentation…" autocomplete="off"><button data-search-close>Close</button></div><div class="search-results" data-search-results></div></div></div><script src="search-index.js"></script><script src="site.js"></script></body></html>

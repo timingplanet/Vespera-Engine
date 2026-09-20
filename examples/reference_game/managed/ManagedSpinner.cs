@@ -2,7 +2,7 @@ using Vespera;
 
 namespace ReferenceGame.Scripts;
 
-// Tiny dogfood component: rotating the watcher changes which directional sprite
+// Small reference component: rotating the watcher changes which directional sprite
 // frame the native renderer selects, proving C# -> native Transform writes are live.
 public enum SpinDirection
 {

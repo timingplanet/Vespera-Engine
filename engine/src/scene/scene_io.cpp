@@ -9,6 +9,7 @@
 #include <fstream>
 #include <iomanip>
 #include <limits>
+#include <optional>
 #include <sstream>
 #include <string>
 #include <string_view>
@@ -49,6 +50,38 @@ std::unordered_map<std::string, TextureId> texture_lookup(const SectorWorld& wor
         }
     }
     return lookup;
+}
+
+std::string canonical_texture_name(std::string_view name) {
+    std::string result;
+    result.reserve(name.size());
+    for (unsigned char c : name) {
+        if (c >= 'A' && c <= 'Z') c = static_cast<unsigned char>(c - 'A' + 'a');
+        if ((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9')) {
+            result.push_back(static_cast<char>(c));
+        }
+    }
+    return result;
+}
+
+std::optional<TextureData> normalized_texture_alias(const SectorWorld& world, std::string_view requested_name) {
+    const std::string requested_key = canonical_texture_name(requested_name);
+    if (requested_key.empty()) return std::nullopt;
+
+    const TextureData* match = nullptr;
+    for (const auto& texture : world.textures()) {
+        if (texture.name.empty() || canonical_texture_name(texture.name) != requested_key) continue;
+        if (match != nullptr) {
+            // Never guess when two registered assets normalize to the same name.
+            return std::nullopt;
+        }
+        match = &texture;
+    }
+    if (!match) return std::nullopt;
+
+    TextureData alias = *match;
+    alias.name = std::string(requested_name);
+    return alias;
 }
 
 std::string material_name(const SectorWorld& world, MaterialId id) {
@@ -962,11 +995,16 @@ SceneIoResult load_scene_text_resilient(
 ) {
     constexpr std::string_view kMissingTexturePrefix = "texture reference '";
     constexpr std::size_t kMaxFallbackTextures = 64;
+    std::size_t normalized_alias_count = 0;
     std::size_t fallback_count = 0;
 
     for (;;) {
         auto result = load_scene_text(scene, path);
         if (result) {
+            if (normalized_alias_count != 0) {
+                result.message += " | " + std::to_string(normalized_alias_count)
+                    + " texture reference(s) matched imported asset names by normalized spelling";
+            }
             if (fallback_count != 0) {
                 result.message += " | " + std::to_string(fallback_count)
                     + " missing texture reference(s) replaced with visible placeholders";
@@ -986,6 +1024,18 @@ SceneIoResult load_scene_text_resilient(
             return texture.name == missing_name;
         });
         if (already_present) return result; // avoid a retry loop if a different invariant failed.
+
+        // Older/reference content can carry human-readable texture names such as
+        // "Floor Tiles" while the project catalog imports floor_tiles.bmp as
+        // "floor_tiles". Preserve the scene's serialized name by adding an alias
+        // that reuses the already imported pixels. This is deliberately only a
+        // resilient-load fallback: exact names still win, and ambiguous normalized
+        // matches fall through to the visible missing-texture placeholder.
+        if (auto alias = normalized_texture_alias(scene.world, missing_name)) {
+            scene.world.add_texture(std::move(*alias));
+            ++normalized_alias_count;
+            continue;
+        }
 
         scene.world.add_texture(make_missing_texture_placeholder(missing_name));
         ++fallback_count;

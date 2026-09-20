@@ -3,6 +3,7 @@
 #include <array>
 #include <vespera/render/render_stats.hpp>
 #include <memory>
+#include <optional>
 #include <string>
 #include <string_view>
 
@@ -13,6 +14,19 @@ namespace vespera {
 class Scene;
 struct Camera;
 struct UiRenderPacket;
+
+
+enum class RenderBackendType {
+    Automatic,
+    Direct3D12,
+    Vulkan,
+    Null,
+};
+
+[[nodiscard]] std::string_view render_backend_type_name(RenderBackendType type);
+[[nodiscard]] std::optional<RenderBackendType> parse_render_backend_type(std::string_view value);
+[[nodiscard]] bool render_backend_compiled(RenderBackendType type);
+[[nodiscard]] RenderBackendType resolve_render_backend_type(RenderBackendType requested);
 
 struct RendererCapabilities {
     std::string adapter_name;
@@ -85,6 +99,7 @@ public:
     [[nodiscard]] virtual const RendererCapabilities& capabilities() const = 0;
 };
 
+std::unique_ptr<RenderBackend> create_render_backend(RenderBackendType type);
 std::unique_ptr<RenderBackend> create_default_render_backend();
 
 } // namespace vespera

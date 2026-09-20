@@ -18,6 +18,7 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <cstdio>
 #include <cstdlib>
 #include <cwchar>
 #include <filesystem>
@@ -30,6 +31,10 @@
 #include <unordered_set>
 #include <vector>
 
+#if defined(_WIN32) || defined(__linux__)
+#define VESPERA_MANAGED_HOSTFXR 1
+#endif
+
 #ifdef _WIN32
 #ifndef NOMINMAX
 #define NOMINMAX
@@ -38,6 +43,8 @@
 #define WIN32_LEAN_AND_MEAN
 #endif
 #include <windows.h>
+#elif defined(__linux__)
+#include <dlfcn.h>
 #endif
 
 namespace vespera {
@@ -807,9 +814,9 @@ std::uint64_t managed_instantiate_prefab(void* user, const char* path, const cha
             std::error_code ec;
             const auto relative = std::filesystem::relative(std::filesystem::path(path), bridge->assets->root(), ec);
             if (!ec) {
-                if (const auto* record = bridge->assets->find(relative.generic_string())) {
-                    source_reference.asset_id = record->asset_id;
-                    source_reference.path = record->relative_path;
+                if (const auto* relative_record = bridge->assets->find(relative.generic_string())) {
+                    source_reference.asset_id = relative_record->asset_id;
+                    source_reference.path = relative_record->relative_path;
                 }
             }
         }
@@ -1182,9 +1189,20 @@ int managed_set_property_color(void* user, std::uint64_t id, const char* compone
         BuiltinPropertyValue{std::array<float, 4>{value->r, value->g, value->b, value->a}}) ? 1 : 0;
 }
 
-#ifdef _WIN32
+#ifdef VESPERA_MANAGED_HOSTFXR
 
+#ifdef _WIN32
 using char_t = wchar_t;
+using host_library_t = HMODULE;
+#define VESPERA_HOSTFXR_CALLTYPE __cdecl
+#define VESPERA_LOAD_ASSEMBLY_CALLTYPE __stdcall
+#else
+using char_t = char;
+using host_library_t = void*;
+#define VESPERA_HOSTFXR_CALLTYPE
+#define VESPERA_LOAD_ASSEMBLY_CALLTYPE
+#endif
+
 using hostfxr_handle = void*;
 
 enum hostfxr_delegate_type {
@@ -1197,10 +1215,10 @@ enum hostfxr_delegate_type {
     hdt_get_function_pointer = 6,
 };
 
-using hostfxr_initialize_for_runtime_config_fn = int(__cdecl*)(const char_t*, const void*, hostfxr_handle*);
-using hostfxr_get_runtime_delegate_fn = int(__cdecl*)(hostfxr_handle, hostfxr_delegate_type, void**);
-using hostfxr_close_fn = int(__cdecl*)(hostfxr_handle);
-using load_assembly_and_get_function_pointer_fn = int(__stdcall*)(
+using hostfxr_initialize_for_runtime_config_fn = int(VESPERA_HOSTFXR_CALLTYPE*)(const char_t*, const void*, hostfxr_handle*);
+using hostfxr_get_runtime_delegate_fn = int(VESPERA_HOSTFXR_CALLTYPE*)(hostfxr_handle, hostfxr_delegate_type, void**);
+using hostfxr_close_fn = int(VESPERA_HOSTFXR_CALLTYPE*)(hostfxr_handle);
+using load_assembly_and_get_function_pointer_fn = int(VESPERA_LOAD_ASSEMBLY_CALLTYPE*)(
     const char_t*, const char_t*, const char_t*, const char_t*, void*, void**);
 
 enum class ManagedDispatchCommand : int {
@@ -1223,8 +1241,12 @@ enum class ManagedDispatchCommand : int {
 
 using managed_dispatch_fn = int(*)(int, const void*, const char*, std::uint64_t, float);
 
-std::wstring wide_absolute(const std::filesystem::path& path) {
+std::basic_string<char_t> host_absolute(const std::filesystem::path& path) {
+#ifdef _WIN32
     return std::filesystem::absolute(path).lexically_normal().wstring();
+#else
+    return std::filesystem::absolute(path).lexically_normal().string();
+#endif
 }
 
 std::string utf8_absolute(const std::filesystem::path& path) {
@@ -1232,55 +1254,95 @@ std::string utf8_absolute(const std::filesystem::path& path) {
     return {reinterpret_cast<const char*>(u8.data()), u8.size()};
 }
 
-std::tuple<int, int, int> parse_version_triplet(std::wstring text) {
+std::tuple<int, int, int> parse_version_triplet(const std::filesystem::path& path) {
     int a = 0, b = 0, c = 0;
-    swscanf_s(text.c_str(), L"%d.%d.%d", &a, &b, &c);
+    const std::string text = path.filename().string();
+    std::sscanf(text.c_str(), "%d.%d.%d", &a, &b, &c);
     return {a, b, c};
 }
 
-void append_dotnet_root(std::vector<std::filesystem::path>& roots, const wchar_t* env_name) {
-    wchar_t* value = nullptr;
-    std::size_t count = 0;
-    if (_wdupenv_s(&value, &count, env_name) == 0 && value && *value) {
-        roots.emplace_back(value);
+void append_dotnet_root(std::vector<std::filesystem::path>& roots, const char* env_name) {
+    if (const char* value = std::getenv(env_name); value && *value) roots.emplace_back(value);
+}
+
+std::filesystem::path current_executable_directory() {
+#ifdef _WIN32
+    std::array<wchar_t, 32768> module_path{};
+    const DWORD module_length = GetModuleFileNameW(nullptr, module_path.data(), static_cast<DWORD>(module_path.size()));
+    if (module_length > 0 && module_length < module_path.size()) {
+        return std::filesystem::path(module_path.data()).parent_path();
     }
-    if (value) free(value);
+#else
+    std::error_code ec;
+    const auto executable = std::filesystem::read_symlink("/proc/self/exe", ec);
+    if (!ec && !executable.empty()) return executable.parent_path();
+#endif
+    return {};
 }
 
 std::filesystem::path find_hostfxr() {
     std::vector<std::filesystem::path> roots;
-    // Portable Vespera packages place a private dotnet root beside the game
-    // executable. Prefer it before machine-wide installs so exported builds can
-    // run on systems without a separately installed .NET runtime.
-    std::array<wchar_t, 32768> module_path{};
-    const DWORD module_length = GetModuleFileNameW(nullptr, module_path.data(), static_cast<DWORD>(module_path.size()));
-    if (module_length > 0 && module_length < module_path.size()) {
-        roots.emplace_back(std::filesystem::path(module_path.data()).parent_path() / L"dotnet");
-    }
-    append_dotnet_root(roots, L"DOTNET_ROOT");
-    append_dotnet_root(roots, L"DOTNET_ROOT_X64");
-    append_dotnet_root(roots, L"ProgramW6432");
-    append_dotnet_root(roots, L"ProgramFiles");
+    const auto executable_directory = current_executable_directory();
+    if (!executable_directory.empty()) roots.emplace_back(executable_directory / "dotnet");
+    append_dotnet_root(roots, "DOTNET_ROOT");
+    append_dotnet_root(roots, "DOTNET_ROOT_X64");
+#ifdef _WIN32
+    append_dotnet_root(roots, "ProgramW6432");
+    append_dotnet_root(roots, "ProgramFiles");
+#else
+    roots.emplace_back("/usr/share/dotnet");
+    roots.emplace_back("/usr/local/share/dotnet");
+#endif
 
     std::vector<std::filesystem::path> candidates;
     for (auto root : roots) {
+#ifdef _WIN32
         if (root.filename() != L"dotnet") root /= L"dotnet";
-        const auto fxr_root = root / L"host" / L"fxr";
+        constexpr const wchar_t* kHostFxrLibrary = L"hostfxr.dll";
+#else
+        if (root.filename() != "dotnet" && std::filesystem::is_directory(root / "dotnet")) root /= "dotnet";
+        constexpr const char* kHostFxrLibrary = "libhostfxr.so";
+#endif
+        const auto fxr_root = root / "host" / "fxr";
         std::error_code ec;
         if (!std::filesystem::is_directory(fxr_root, ec)) continue;
         for (const auto& entry : std::filesystem::directory_iterator(fxr_root, ec)) {
             if (!entry.is_directory()) continue;
-            const auto candidate = entry.path() / L"hostfxr.dll";
+            const auto candidate = entry.path() / kHostFxrLibrary;
             if (std::filesystem::exists(candidate, ec)) candidates.push_back(candidate);
         }
     }
     if (candidates.empty()) return {};
     std::sort(candidates.begin(), candidates.end(), [](const auto& a, const auto& b) {
-        return parse_version_triplet(a.parent_path().filename().wstring())
-             < parse_version_triplet(b.parent_path().filename().wstring());
+        return parse_version_triplet(a.parent_path()) < parse_version_triplet(b.parent_path());
     });
     return candidates.back();
 }
+
+host_library_t load_host_library(const std::filesystem::path& path) {
+#ifdef _WIN32
+    return LoadLibraryW(path.c_str());
+#else
+    return dlopen(path.c_str(), RTLD_LAZY | RTLD_LOCAL);
+#endif
+}
+
+void* host_symbol(host_library_t library, const char* name) {
+    if (!library) return nullptr;
+#ifdef _WIN32
+    return reinterpret_cast<void*>(GetProcAddress(library, name));
+#else
+    return dlsym(library, name);
+#endif
+}
+
+#ifdef _WIN32
+constexpr const wchar_t* kManagedEntryPointType = L"Vespera.Managed.EntryPoint, Vespera.NET";
+constexpr const wchar_t* kManagedDispatchMethod = L"Dispatch";
+#else
+constexpr const char* kManagedEntryPointType = "Vespera.Managed.EntryPoint, Vespera.NET";
+constexpr const char* kManagedDispatchMethod = "Dispatch";
+#endif
 
 #endif
 
@@ -1307,8 +1369,8 @@ struct ManagedScriptHost::Impl {
     ManagedScriptHostConfig config;
     std::vector<LiveScriptAttachment> live_scripts;
 
-#ifdef _WIN32
-    HMODULE hostfxr_library = nullptr;
+#ifdef VESPERA_MANAGED_HOSTFXR
+    host_library_t hostfxr_library = nullptr;
     managed_dispatch_fn managed_dispatch = nullptr;
     GameAssemblySignature observed_game_assembly{};
     GameAssemblySignature pending_game_assembly{};
@@ -1367,9 +1429,9 @@ bool ManagedScriptHost::initialize(Scene& scene, InputSystem& input, AudioSystem
     impl_->bridge.scratch_asset_text.clear();
     impl_->config = config;
 
-#ifndef _WIN32
+#ifndef VESPERA_MANAGED_HOSTFXR
     (void)config;
-    impl_->status.message = "managed scripting host is currently implemented for Windows first";
+    impl_->status.message = "managed scripting host is unavailable on this platform";
     return false;
 #else
     if (!std::filesystem::exists(config.runtime_config)
@@ -1381,24 +1443,24 @@ bool ManagedScriptHost::initialize(Scene& scene, InputSystem& input, AudioSystem
 
     const auto hostfxr_path = find_hostfxr();
     if (hostfxr_path.empty()) {
-        impl_->status.message = ".NET hostfxr.dll was not found; use a portable export or install a .NET 8+ x64 runtime/SDK";
+        impl_->status.message = ".NET hostfxr was not found; use a portable export or install a .NET 8+ x64 runtime/SDK";
         return false;
     }
     impl_->status.available = true;
     if (!impl_->hostfxr_library) {
-        impl_->hostfxr_library = LoadLibraryW(hostfxr_path.c_str());
+        impl_->hostfxr_library = load_host_library(hostfxr_path);
     }
     if (!impl_->hostfxr_library) {
-        impl_->status.message = "failed to load hostfxr.dll";
+        impl_->status.message = "failed to load hostfxr";
         return false;
     }
 
     const auto init_fxr = reinterpret_cast<hostfxr_initialize_for_runtime_config_fn>(
-        GetProcAddress(impl_->hostfxr_library, "hostfxr_initialize_for_runtime_config"));
+        host_symbol(impl_->hostfxr_library, "hostfxr_initialize_for_runtime_config"));
     const auto get_delegate = reinterpret_cast<hostfxr_get_runtime_delegate_fn>(
-        GetProcAddress(impl_->hostfxr_library, "hostfxr_get_runtime_delegate"));
+        host_symbol(impl_->hostfxr_library, "hostfxr_get_runtime_delegate"));
     const auto close_fxr = reinterpret_cast<hostfxr_close_fn>(
-        GetProcAddress(impl_->hostfxr_library, "hostfxr_close"));
+        host_symbol(impl_->hostfxr_library, "hostfxr_close"));
     if (!init_fxr || !get_delegate || !close_fxr) {
         impl_->status.message = "hostfxr exports are incomplete";
         shutdown();
@@ -1406,7 +1468,7 @@ bool ManagedScriptHost::initialize(Scene& scene, InputSystem& input, AudioSystem
     }
 
     hostfxr_handle context = nullptr;
-    const auto runtime_config = wide_absolute(config.runtime_config);
+    const auto runtime_config = host_absolute(config.runtime_config);
     int rc = init_fxr(runtime_config.c_str(), nullptr, &context);
     if (rc < 0 || !context) {
         impl_->status.message = std::format("hostfxr runtime initialization failed (0x{:08X})", static_cast<unsigned>(rc));
@@ -1424,12 +1486,11 @@ bool ManagedScriptHost::initialize(Scene& scene, InputSystem& input, AudioSystem
         return false;
     }
 
-    const auto bridge = wide_absolute(config.bridge_assembly);
-    constexpr const wchar_t* type_name = L"Vespera.Managed.EntryPoint, Vespera.NET";
-    const auto unmanaged_callers_only = reinterpret_cast<const wchar_t*>(static_cast<std::intptr_t>(-1));
+    const auto bridge = host_absolute(config.bridge_assembly);
+    const auto unmanaged_callers_only = reinterpret_cast<const char_t*>(static_cast<std::intptr_t>(-1));
 
     void* dispatch_ptr = nullptr;
-    rc = load_assembly(bridge.c_str(), type_name, L"Dispatch",
+    rc = load_assembly(bridge.c_str(), kManagedEntryPointType, kManagedDispatchMethod,
         unmanaged_callers_only, nullptr, &dispatch_ptr);
     impl_->managed_dispatch = reinterpret_cast<managed_dispatch_fn>(dispatch_ptr);
     if (rc < 0 || !impl_->managed_dispatch) {
@@ -1607,7 +1668,7 @@ bool ManagedScriptHost::initialize(Scene& scene, InputSystem& input, AudioSystem
 }
 
 void ManagedScriptHost::start() {
-#ifdef _WIN32
+#ifdef VESPERA_MANAGED_HOSTFXR
     if (impl_->status.initialized && impl_->managed_dispatch) {
         impl_->managed_dispatch(static_cast<int>(ManagedDispatchCommand::StartAll), nullptr, nullptr, 0, 0.0f);
     }
@@ -1615,7 +1676,7 @@ void ManagedScriptHost::start() {
 }
 
 void ManagedScriptHost::update(double delta_seconds) {
-#ifdef _WIN32
+#ifdef VESPERA_MANAGED_HOSTFXR
     if (impl_->status.initialized && impl_->managed_dispatch) {
         if (impl_->config.auto_reload && !impl_->config.game_assembly.empty()) {
             const double poll_seconds = (std::max)(0.05, impl_->config.auto_reload_poll_seconds);
@@ -1762,7 +1823,7 @@ bool ManagedScriptHost::camera_was_written_last_update() const {
 }
 
 bool ManagedScriptHost::reload() {
-#ifdef _WIN32
+#ifdef VESPERA_MANAGED_HOSTFXR
     if (!impl_ || !impl_->status.initialized || !impl_->scene || !impl_->managed_dispatch
         || impl_->config.game_assembly.empty()) {
         if (impl_) impl_->status.message = "managed reload requested before the scripting host was initialized";
@@ -1851,7 +1912,7 @@ bool ManagedScriptHost::reload() {
 }
 
 void ManagedScriptHost::trigger_enter(std::uint64_t trigger_entity, std::uint64_t other_entity) {
-#ifdef _WIN32
+#ifdef VESPERA_MANAGED_HOSTFXR
     if (impl_ && impl_->status.initialized && impl_->managed_dispatch) {
         impl_->managed_dispatch(static_cast<int>(ManagedDispatchCommand::TriggerEnter),
             reinterpret_cast<const void*>(static_cast<std::uintptr_t>(other_entity)), nullptr,
@@ -1868,7 +1929,7 @@ void ManagedScriptHost::trigger_enter(std::uint64_t trigger_entity, std::uint64_
 }
 
 void ManagedScriptHost::trigger_exit(std::uint64_t trigger_entity, std::uint64_t other_entity) {
-#ifdef _WIN32
+#ifdef VESPERA_MANAGED_HOSTFXR
     if (impl_ && impl_->status.initialized && impl_->managed_dispatch) {
         impl_->managed_dispatch(static_cast<int>(ManagedDispatchCommand::TriggerExit),
             reinterpret_cast<const void*>(static_cast<std::uintptr_t>(other_entity)), nullptr,
@@ -1885,7 +1946,7 @@ void ManagedScriptHost::trigger_exit(std::uint64_t trigger_entity, std::uint64_t
 }
 
 void ManagedScriptHost::trigger_stay(std::uint64_t trigger_entity, std::uint64_t other_entity) {
-#ifdef _WIN32
+#ifdef VESPERA_MANAGED_HOSTFXR
     if (impl_ && impl_->status.initialized && impl_->managed_dispatch) {
         impl_->managed_dispatch(static_cast<int>(ManagedDispatchCommand::TriggerStay),
             reinterpret_cast<const void*>(static_cast<std::uintptr_t>(other_entity)), nullptr,
@@ -1939,7 +2000,7 @@ void ManagedScriptHost::clear_runtime_events() {
 }
 
 void ManagedScriptHost::shutdown() {
-#ifdef _WIN32
+#ifdef VESPERA_MANAGED_HOSTFXR
     if (impl_ && impl_->managed_dispatch) {
         // Safe even during partial initialization; this clears any bridge state
         // that may have been established before a later host step failed.
@@ -1979,7 +2040,7 @@ void ManagedScriptHost::shutdown() {
         impl_->bridge.runtime_frame = runtime_frame;
         impl_->bridge.assembly_generation = assembly_generation;
         impl_->live_scripts.clear();
-#ifdef _WIN32
+#ifdef VESPERA_MANAGED_HOSTFXR
         impl_->observed_game_assembly = {};
         impl_->pending_game_assembly = {};
         impl_->auto_reload_poll_accumulator = 0.0;

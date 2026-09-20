@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework Condition="'$(VesperaTargetFramework)' == ''">net8.0</TargetFramework>
+    <TargetFramework Condition="'$(VesperaTargetFramework)' == ''">net10.0</TargetFramework>
     <TargetFramework Condition="'$(VesperaTargetFramework)' != ''">$(VesperaTargetFramework)</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>

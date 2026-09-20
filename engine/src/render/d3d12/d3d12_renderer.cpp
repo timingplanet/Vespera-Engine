@@ -1928,7 +1928,7 @@ private:
         std::vector<std::uint8_t> layer_pixels(pixels_per_layer * layer_count_size, 255u);
 
         // Layer zero is always plain white so untextured materials remain valid.
-        std::fill(layer_pixels.begin(), layer_pixels.begin() + static_cast<std::ptrdiff_t>(pixels_per_layer), 255u);
+        std::fill(layer_pixels.begin(), layer_pixels.begin() + static_cast<std::ptrdiff_t>(pixels_per_layer), std::uint8_t{255});
 
         for (std::size_t texture_index = 0; texture_index < world.textures().size(); ++texture_index) {
             const TextureData& texture = world.textures()[texture_index];
@@ -2450,7 +2450,7 @@ const D3D12NativeAccess* d3d12_native_access(const RenderBackend* backend) {
     return dynamic_cast<const D3D12NativeAccess*>(backend);
 }
 
-std::unique_ptr<RenderBackend> create_default_render_backend() {
+std::unique_ptr<RenderBackend> create_d3d12_render_backend() {
     return std::make_unique<D3D12Renderer>();
 }
 

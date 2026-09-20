@@ -1,0 +1,35 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Supported texture sources, .vmeta texture settings, .slmat materials, and assigning materials to mesh renderers."><title>Textures &amp; Materials — Vespera Engine Docs</title><link rel="icon" href="assets/vespera_icon.png"><link rel="stylesheet" href="styles.css"></head><body><header class="topbar"><a class="brand" href="index.html"><img src="assets/vespera_icon.png" alt=""><span>Vespera Engine</span><b>Docs</b></a><button class="search-button" type="button" data-search-open><span>Search docs</span><kbd>Ctrl K</kbd></button></header><div class="wiki-layout"><aside class="left-rail"><div class="rail-scroll"><nav class="doc-nav" aria-label="Documentation"><div class="nav-group"><div class="nav-group-title">Start here</div><a href="index.html">Documentation Home</a><a href="getting-started.html">Getting Started</a><a href="first-game.html">Your First Game</a><a href="project-structure.html">Project Structure</a><a href="file-types.html">File Types</a><a href="editor.html">Editor Guide</a></div><div class="nav-group"><div class="nav-group-title">World &amp; content</div><a href="scenes-entities.html">Scenes &amp; Entities</a><a href="prefabs.html">Prefabs</a><a href="asset-pipeline.html">Asset Pipeline</a><a href="materials-textures.html" aria-current="page">Textures &amp; Materials</a><a href="sprites.html">Sprites &amp; Animation</a><a href="audio.html">Audio</a></div><div class="nav-group"><div class="nav-group-title">Gameplay</div><a href="input.html">Input</a><a href="managed-scripting.html">C# Scripting</a><a href="gameplay-api.html">Gameplay API</a><a href="lua-scripting.html">Lua Scripting</a></div><div class="nav-group"><div class="nav-group-title">UI &amp; 2D</div><a href="rmlui.html">RmlUi</a><a href="runtime-ui.html">Runtime UI API</a><a href="two-d-foundation.html">2D / UI Foundation</a></div><div class="nav-group"><div class="nav-group-title">Build &amp; help</div><a href="build-and-ship.html">Build &amp; Ship</a><a href="exporting.html">Exporting Reference</a><a href="troubleshooting.html">Troubleshooting</a><a href="limitations.html">Current Limitations</a></div><div class="nav-group"><div class="nav-group-title">Advanced</div><a href="scene-format.html">Scene Text Format</a><a href="extensions.html">Editor Extensions</a><a href="automation-mcp.html">Automation / MCP</a></div></nav></div></aside><main class="article-wrap"><article class="article"><div class="doc-breadcrumb"><a href="index.html">Documentation</a><span>›</span>Textures &amp; Materials</div><h1 id="textures-materials">Textures &amp; Materials</h1>
+<p>Textures are imported source assets. Materials are authored <code>.slmat</code> assets that can reference textures and provide rendering properties to mesh content.</p>
+<h2 id="texture-sources">Texture sources</h2>
+<p>The Asset Catalog recognizes:</p>
+<ul>
+<li>PNG</li>
+<li>JPEG (<code>.jpg</code>, <code>.jpeg</code>)</li>
+<li>BMP</li>
+<li>TGA</li>
+</ul>
+<p>The texture importer directly handles BMP and routes PNG/JPEG through the image import path. Texture source intent/import settings are stored in the texture's <code>.vmeta</code> sidecar.</p>
+<p>Select a texture in Project / Assets to inspect its import settings. Refresh the catalog after replacing a texture file externally.</p>
+<h2 id="materials">Materials</h2>
+<p>Create a material with <strong>Create → Create Material Asset</strong>. The material appears as a <code>.slmat</code> asset.</p>
+<p>A material can hold a stable reference to its base texture. Assign materials in the Inspector by selecting or dropping the material asset onto a Mesh Renderer.</p>
+<p>From C#:</p>
+<pre><code class="language-csharp">var renderer = Entity.EnsureMeshRenderer();
+renderer.SetMaterial("materials/stone.slmat");
+renderer.Tint = new Color(1.0f, 0.9f, 0.85f, 1.0f);
+</code></pre>
+<p>Or use a stable <code>AssetReference</code>:</p>
+<pre><code class="language-csharp">renderer.Material = Assets.FromPath("materials/stone.slmat");
+</code></pre>
+<h2 id="moving-textures-or-materials">Moving textures or materials</h2>
+<p>Materials participate in stable reference repair. Move referenced textures/materials through Project / Assets so the catalog can retain identity and rewrite fallback paths.</p>
+<h2 id="practical-workflow">Practical workflow</h2>
+<ol>
+<li>Add a texture under <code>assets/</code>.</li>
+<li>Refresh the Asset Catalog if needed.</li>
+<li>Create a <code>.slmat</code> material.</li>
+<li>Assign the texture to the material in the Inspector.</li>
+<li>Assign the material to a Mesh Renderer.</li>
+<li>Save the scene and test in Play Mode.</li>
+</ol>
+</article></main><aside class="right-rail"><div class="toc"><div class="toc-title">On this page</div><a class="h2" href="#texture-sources">Texture sources</a><a class="h2" href="#materials">Materials</a><a class="h2" href="#moving-textures-or-materials">Moving textures or materials</a><a class="h2" href="#practical-workflow">Practical workflow</a></div></aside></div><footer class="site-footer"><span>Vespera Engine documentation</span><span>MIT License · Timingplanet</span></footer><div class="search-modal" data-search-modal hidden><div class="search-panel" role="dialog" aria-modal="true"><div class="search-row"><input data-search-input type="search" placeholder="Search Vespera documentation…" autocomplete="off"><button data-search-close>Close</button></div><div class="search-results" data-search-results></div></div></div><script src="search-index.js"></script><script src="site.js"></script></body></html>

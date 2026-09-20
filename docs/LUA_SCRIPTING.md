@@ -1,22 +1,14 @@
-# Lua scripting
+# Lua Scripting
 
-Vespera 0.10.0b embeds Lua 5.4.9 as the lightweight runtime/mod scripting path. C# remains the primary full-game scripting surface. Lua deliberately reuses Vespera's existing gameplay semantics instead of defining a parallel engine API.
+Lua is an optional **project-level** runtime scripting path. It is useful for lightweight game/mod logic that does not need the full per-entity C# component model.
 
-## Project entry script
+C# and Lua can coexist in the same project.
 
-Project Text v9 adds one optional stable Lua entry reference:
+## Configure the entry script
 
-```text
-lua_entry_asset "<stable-id>" "scripts/game.lua"
-```
+Place a `.lua` file under the project asset root, select it in Project / Assets, then use **Project Settings → Lua Entry Script → Use Selected Lua**.
 
-The entry is an automatic build root, participates in stable-ID move repair, and is protected by safe-delete preflight. It can be selected or cleared from Project Settings or through the existing project-setting automation surface.
-
-When configured, the same entry runs in Editor Play and the shared `vespera_player`. A project may use C#, Lua, both, or neither.
-
-## Lifecycle
-
-The entry script may define any of these globals:
+A Lua entry can define:
 
 ```lua
 function Start()
@@ -24,51 +16,52 @@ function Start()
 end
 
 function Update(dt)
+    -- per-frame logic
 end
 
 function Stop()
+    Vespera.Log.info("Lua stopped")
 end
 ```
 
-Missing lifecycle functions are valid. Runtime errors from `Update` disable further updates until the script is reloaded, preventing a failing script from flooding the frame log.
-
-## API surface
-
-The global `Vespera` table currently exposes:
-
-- `Vespera.version`
-- `Vespera.Log.info/warn/error`
-- `Vespera.Input.value/down/pressed/released`
-- `Vespera.Scene.find/find_tag/current/load/reload`
-- `Vespera.Entity.exists/name/set_name/enabled/set_enabled`
-- `Vespera.Entity.position/set_position/rotation/set_rotation/scale/set_scale`
-- `Vespera.Entity.get_property/set_property`
-- `Vespera.UI.exists/text/set_text/value/set_value/set_visible/set_disabled/set_property/set_class/click/consume_clicks`
-- `Vespera.Assets.resolve`
-- `Vespera.Audio.play/stop`
-
-Generic entity component-property access uses the same stable component keys and property metadata as C#. Vector2 values are exposed to Lua as `{x=..., y=...}` even though some native 2.5D internals store the second axis as Z.
-
-Example:
+## Input
 
 ```lua
-function Update(dt)
-    if Vespera.Input.pressed("probe") then
-        local player = Vespera.Scene.find_tag("player")
-        if player then
-            local p = Vespera.Entity.position(player)
-            Vespera.Log.info(string.format("player %.2f %.2f %.2f", p.x, p.y, p.z))
-        end
-    end
+if Vespera.Input.pressed("probe") then
+    Vespera.Log.info("probe pressed")
 end
 ```
 
-## Runtime safety boundary
+Lua uses the same named project input actions as C# and standalone Play.
 
-The default Lua state opens only the base, table, string, math, UTF-8, and coroutine libraries. Vespera does not expose the standard `io`, `os`, `debug`, or `package` libraries, and removes `dofile` and `loadfile` from the base environment. The engine itself loads the configured project entry file.
+## Scene and entities
 
-This is a deliberate lightweight runtime/mod boundary, not a general host-filesystem scripting shell.
+A source-tree example uses the semantic runtime API like this:
 
-## Current boundary
+```lua
+local player = Vespera.Scene.find_tag("player")
+if player then
+    local p = Vespera.Entity.position(player)
+    Vespera.Log.info(string.format("player %.2f %.2f %.2f", p.x, p.y, p.z))
+end
+```
 
-0.10.0b does **not** add per-entity Lua script components, Lua-specific trigger callbacks, a `require`/module loader, or a second Lua-only gameplay event bus. C# remains the richer component/lifecycle path. Lua will grow only where real project workflows need lightweight runtime scripting without duplicating the managed API.
+Use the Vespera-provided scene/entity/UI/asset/audio/input surface rather than assuming access to native engine internals.
+
+## Runtime restrictions
+
+The Lua environment is intentionally constrained for project-level gameplay. It does not expose unrestricted filesystem/process/debug facilities such as `io`, `os`, `debug`, `package`, `dofile`, or `loadfile`.
+
+This means Lua files should use project assets and Vespera's semantic APIs rather than building their own file/module loader.
+
+## When to choose C# instead
+
+Use C# when you need:
+
+- per-entity components in the Inspector;
+- exposed fields;
+- trigger lifecycle callbacks;
+- richer typed gameplay code;
+- reusable component classes attached to many entities.
+
+Use Lua when a single lightweight project runtime script is enough.

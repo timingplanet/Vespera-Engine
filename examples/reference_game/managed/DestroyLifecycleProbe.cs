@@ -2,7 +2,7 @@ using Vespera;
 
 namespace ReferenceGame.Scripts;
 
-// 0.6.3 dogfood for transactional Entity.Destroy(). The native host must call
+// Reference coverage for transactional Entity.Destroy(). The native host must call
 // OnDestroy while the Entity still exists, then remove native storage after all
 // managed Update calls have returned.
 public sealed class DestroyLifecycleProbe : Component

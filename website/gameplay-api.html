@@ -1,0 +1,82 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Reference and examples for entities, scenes, transforms, camera, prefabs, physics, UI, audio, input, time, save data, assets, and logging."><title>Gameplay API — Vespera Engine Docs</title><link rel="icon" href="assets/vespera_icon.png"><link rel="stylesheet" href="styles.css"></head><body><header class="topbar"><a class="brand" href="index.html"><img src="assets/vespera_icon.png" alt=""><span>Vespera Engine</span><b>Docs</b></a><button class="search-button" type="button" data-search-open><span>Search docs</span><kbd>Ctrl K</kbd></button></header><div class="wiki-layout"><aside class="left-rail"><div class="rail-scroll"><nav class="doc-nav" aria-label="Documentation"><div class="nav-group"><div class="nav-group-title">Start here</div><a href="index.html">Documentation Home</a><a href="getting-started.html">Getting Started</a><a href="first-game.html">Your First Game</a><a href="project-structure.html">Project Structure</a><a href="file-types.html">File Types</a><a href="editor.html">Editor Guide</a></div><div class="nav-group"><div class="nav-group-title">World &amp; content</div><a href="scenes-entities.html">Scenes &amp; Entities</a><a href="prefabs.html">Prefabs</a><a href="asset-pipeline.html">Asset Pipeline</a><a href="materials-textures.html">Textures &amp; Materials</a><a href="sprites.html">Sprites &amp; Animation</a><a href="audio.html">Audio</a></div><div class="nav-group"><div class="nav-group-title">Gameplay</div><a href="input.html">Input</a><a href="managed-scripting.html">C# Scripting</a><a href="gameplay-api.html" aria-current="page">Gameplay API</a><a href="lua-scripting.html">Lua Scripting</a></div><div class="nav-group"><div class="nav-group-title">UI &amp; 2D</div><a href="rmlui.html">RmlUi</a><a href="runtime-ui.html">Runtime UI API</a><a href="two-d-foundation.html">2D / UI Foundation</a></div><div class="nav-group"><div class="nav-group-title">Build &amp; help</div><a href="build-and-ship.html">Build &amp; Ship</a><a href="exporting.html">Exporting Reference</a><a href="troubleshooting.html">Troubleshooting</a><a href="limitations.html">Current Limitations</a></div><div class="nav-group"><div class="nav-group-title">Advanced</div><a href="scene-format.html">Scene Text Format</a><a href="extensions.html">Editor Extensions</a><a href="automation-mcp.html">Automation / MCP</a></div></nav></div></aside><main class="article-wrap"><article class="article"><div class="doc-breadcrumb"><a href="index.html">Documentation</a><span>›</span>Gameplay API</div><h1 id="gameplay-api">Gameplay API</h1>
+<p>The public C# namespace is <code>Vespera</code>. This page is a task-oriented map of the most useful runtime types.</p>
+<h2 id="entity-and-scene">Entity and Scene</h2>
+<pre><code class="language-csharp">var player = Scene.FindWithTag("player");
+var enemy = Scene.Create("Enemy");
+var allEnemies = Scene.FindAllWithTag("enemy");
+
+enemy.Tag = "enemy";
+enemy.Layer = "gameplay";
+enemy.Enabled = true;
+</code></pre>
+<p><code>Entity</code> exposes <code>Position</code>, <code>Rotation</code>, <code>Scale</code>, <code>Name</code>, <code>Tag</code>, <code>Layer</code>, <code>Enabled</code>, component helpers, <code>Clone()</code>, and <code>Destroy()</code>.</p>
+<h2 id="transform">Transform</h2>
+<pre><code class="language-csharp">Entity.Transform.Set(
+    new Vector3(0, 1, 0),
+    new Vector3(0, 0, 0),
+    new Vector3(1, 1, 1));
+</code></pre>
+<p>For many objects, reuse a <code>TransformUpdate[]</code> and call <code>Transform.SetBatch</code> to reduce managed/native transitions.</p>
+<h2 id="camera">Camera</h2>
+<pre><code class="language-csharp">Camera.SetPose(new Vector3(0, 2, -6), yaw: 0.0f, pitch: 0.0f);
+Camera.VerticalFovDegrees = 75.0f;
+</code></pre>
+<p>The camera exposes a complete <code>CameraState</code> as well as position/yaw/pitch/FOV convenience properties.</p>
+<h2 id="prefabs">Prefabs</h2>
+<pre><code class="language-csharp">var pickup = Prefab.Instantiate(
+    "prefabs/pickup.slprefab",
+    new Vector3(3, 0, 2),
+    "Pickup");
+</code></pre>
+<h2 id="physics-and-collision">Physics and collision</h2>
+<p>Cylinder Collider provides movement resolution and overlap helpers:</p>
+<pre><code class="language-csharp">if (Entity.CylinderCollider is { } collider)
+    collider.MoveBy(new Vector3(dx, 0, dz));
+</code></pre>
+<p>The static <code>Physics</code> API includes <code>Raycast2D</code>, <code>OverlapCircle2D</code>, and <code>ResolveCircleMotion2D</code>.</p>
+<h2 id="input-and-time">Input and Time</h2>
+<pre><code class="language-csharp">if (Input.Pressed("jump")) { /* ... */ }
+var move = Input.Value("move_horizontal");
+var dt = Time.DeltaTime;
+</code></pre>
+<p><code>Time.ElapsedTime</code> is also available. <code>GameTimer</code> provides a small reusable duration/repeat timer.</p>
+<h2 id="ui">UI</h2>
+<pre><code class="language-csharp">var score = UI.FindRequired("score");
+score.Text = "Score 10";
+score.Visible = true;
+score.SetClass("warning", enabled: false);
+score.SetProperty("left", "24px");
+
+if (UI.Find("reset")?.Clicked ?? false)
+    ResetGame();
+</code></pre>
+<p><code>UiElement</code> also supports interactable/focus/read-only state, numeric and text values, colors, image/font assignment, and RmlUi property/class changes where supported.</p>
+<h2 id="audio">Audio</h2>
+<pre><code class="language-csharp">Audio.MasterVolume = 0.8f;
+Audio.PlayOneShot("audio/click.wav");
+var hum = Audio.PlaySpatial("audio/hum.wav", Entity.Position, loop: true);
+hum?.Follow(Entity);
+</code></pre>
+<h2 id="assets">Assets</h2>
+<p>Use <code>Assets.FromPath(...)</code> to create a stable-reference value from a project-relative path, and <code>Assets.Resolve(...)</code> when an API needs the current path for that reference.</p>
+<h2 id="save-data">Save data</h2>
+<pre><code class="language-csharp">SaveData.UseSlot("slot1");
+SaveData.SetInt("score", 42);
+SaveData.SetVector3("spawn", Entity.Position);
+SaveData.Save();
+
+if (SaveData.Load())
+    Log.Info($"Loaded score {SaveData.GetInt("score")}");
+</code></pre>
+<p>SaveData supports string, int, float, bool, Vector2, and Vector3 values. Slots are written as human-readable JSON under the configured save directory.</p>
+<h2 id="scene-switching">Scene switching</h2>
+<pre><code class="language-csharp">Scene.Load("scenes/level2.slscene");
+// or
+Scene.Reload();
+</code></pre>
+<h2 id="logging">Logging</h2>
+<pre><code class="language-csharp">Log.Info("Loaded level");
+Log.Warning("Missing optional asset");
+Log.Error("Could not continue");
+</code></pre>
+</article></main><aside class="right-rail"><div class="toc"><div class="toc-title">On this page</div><a class="h2" href="#entity-and-scene">Entity and Scene</a><a class="h2" href="#transform">Transform</a><a class="h2" href="#camera">Camera</a><a class="h2" href="#prefabs">Prefabs</a><a class="h2" href="#physics-and-collision">Physics and collision</a><a class="h2" href="#input-and-time">Input and Time</a><a class="h2" href="#ui">UI</a><a class="h2" href="#audio">Audio</a><a class="h2" href="#assets">Assets</a><a class="h2" href="#save-data">Save data</a><a class="h2" href="#scene-switching">Scene switching</a><a class="h2" href="#logging">Logging</a></div></aside></div><footer class="site-footer"><span>Vespera Engine documentation</span><span>MIT License · Timingplanet</span></footer><div class="search-modal" data-search-modal hidden><div class="search-panel" role="dialog" aria-modal="true"><div class="search-row"><input data-search-input type="search" placeholder="Search Vespera documentation…" autocomplete="off"><button data-search-close>Close</button></div><div class="search-results" data-search-results></div></div></div><script src="search-index.js"></script><script src="site.js"></script></body></html>

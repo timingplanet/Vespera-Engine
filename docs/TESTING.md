@@ -2,7 +2,7 @@
 
 Vespera has three complementary validation layers:
 
-1. `tools/validate_source.py` checks source/format/API contracts and milestone invariants without launching the engine.
+1. `tools/validate_source.py` checks source, format, and API contracts without launching the engine.
 2. `test.ps1` builds and runs cheap C++ behavioral tests for logic that does not require a window, GPU, editor, or managed runtime.
 3. `tools/run-qa.ps1` exercises the live editor/runtime/export path and remains the authoritative end-to-end regression suite.
 
@@ -30,7 +30,7 @@ The first behavioral suite covers pure engine/project logic that previously reli
 - transient text and mouse-delta reset semantics;
 - input-map binding counts/clear behavior;
 - combined action values, clamping and pressed/down semantics;
-- semantic QA/action overrides;
+- test action overrides;
 - gamepad clamp/deadzone/disconnect behavior;
 - project-authored input-map configuration and clean rejection of invalid bindings;
 - project v10 save/load round-trip for shipping, VSync, input, startup UI, Lua entry and stable build-root data;
@@ -66,12 +66,12 @@ Do not force D3D12/editor/runtime behavior into this layer just to raise a unit-
 When a real bug is found, prefer the smallest regression test that fails before the fix and passes afterward. Then still run the nearest live QA scenario if the bug crosses an editor/runtime/shipping boundary.
 
 
-## Combined 0.16 release gate
+## Combined release gate
 
-For a meaningful release checkpoint on Windows, prefer one combined gate instead of manually rebuilding every subsystem between small changes:
+For full Windows release validation, use the top-level runner:
 
 ```powershell
-.\tools\run-release-gate.ps1
+.\test-rc.ps1
 ```
 
-It runs this behavioral suite, performs one Release native build, creates a fresh starter through the Project Hub template creator, exports/launches a portable Release package, verifies the GUI subsystem and persistent runtime log, then exports/starts Emberlight Guild and Performance Lab through the ordinary shared-player path. A final human Hub -> Play -> Build Game -> Release -> Build & Run check remains the public-UX confirmation.
+It runs the deep automated RC gate once, prints plain PASS/FAIL/SKIP status, then launches the Release D3D12/Vulkan editor and reference-game visual smokes for human confirmation. The automated gate includes this behavioral suite, one Release native build, fresh Hub project creation, portable Release export/launch, sample exports, managed recovery, repeated Play/Stop and scene switching, asset move/save/reopen, runtime automation, MCP managed-build coverage, and bounded stress. `tools/run-release-gate.ps1` and `tools/run-rc-gate.ps1` remain lower-level diagnosis tools.

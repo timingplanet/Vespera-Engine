@@ -7,25 +7,7 @@ $ErrorActionPreference = "Stop"
 
 $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $BuildDir = Join-Path $Root "build"
-$ManagedHelper = Join-Path $Root "tools\build-managed-editor.ps1"
-if (-not (Test-Path -LiteralPath $ManagedHelper -PathType Leaf)) {
-    throw "Required managed build helper is missing from this Vespera source package: $ManagedHelper"
-}
-
 $ProjectFile = Join-Path $Root "examples\reference_game\VesperaReference.vesperaproject"
-function Read-VesperaProjectSetting([string]$Path, [string]$Key) {
-    if (-not (Test-Path $Path)) { return $null }
-    $Pattern = '^' + [regex]::Escape($Key) + '\s+"(?<value>.*)"\s*$'
-    foreach ($Line in Get-Content $Path) {
-        if ($Line -match $Pattern) { return $Matches.value }
-    }
-    return $null
-}
-$ManagedProjectSetting = Read-VesperaProjectSetting $ProjectFile "managed_project"
-$ManagedAssemblySetting = Read-VesperaProjectSetting $ProjectFile "managed_assembly"
-$ProjectRoot = Split-Path -Parent $ProjectFile
-$ManagedProjectPath = if ($ManagedProjectSetting) { Join-Path $ProjectRoot $ManagedProjectSetting } else { Join-Path $Root "examples\reference_game\managed\ReferenceGame.Scripts.csproj" }
-$ManagedAssemblyName = if ($ManagedAssemblySetting) { $ManagedAssemblySetting } else { [System.IO.Path]::GetFileNameWithoutExtension($ManagedProjectPath) }
 
 Write-Host "Vespera Engine build" -ForegroundColor Cyan
 Write-Host "Root: $Root"
@@ -119,21 +101,35 @@ if ($LASTEXITCODE -ne 0) { throw "CMake configuration failed with exit code $LAS
 if ($LASTEXITCODE -ne 0) { throw "Vespera native build failed with exit code $LASTEXITCODE." }
 
 
-# Build Vespera.NET and the reference game's C# assembly when .NET is available.
-# The helper stages outputs and only replaces the last-good managed build after
-# compilation + reflection metadata generation both succeed.
+# Build the reference project's C# assembly through the same native builder
+# used by installed Vespera distributions. Keep a build-tree copy for the
+# standalone reference executable and a project-local copy for Editor Play.
 $Dotnet = Find-Dotnet
 if ($Dotnet) {
+    $BuilderExe = Join-Path $BuildDir "tools\builder\$Configuration\vespera_builder.exe"
+    if (-not (Test-Path $BuilderExe)) {
+        throw "Native VesperaBuilder was not produced: $BuilderExe"
+    }
     $ManagedOut = Join-Path $BuildDir "managed\reference_game"
-    $EditorManaged = Join-Path $BuildDir "editor\$Configuration\managed"
-    $Diagnostics = Join-Path $EditorManaged "Vespera.ManagedBuildDiagnostics.txt"
-    Write-Host "`nBuilding Vespera C# scripts with last-good protection..." -ForegroundColor Cyan
-    & $ManagedHelper -Project $ManagedProjectPath -GameAssemblyName $ManagedAssemblyName `
-        -OutputDir $ManagedOut -EditorManagedDir $EditorManaged -DiagnosticsFile $Diagnostics -AllowUnavailable
+    $ManagedConfiguration = if ($Configuration -eq "Debug") { "Debug" } else { "Release" }
+    $ProjectManaged = Join-Path (Split-Path -Parent $ProjectFile) ".vespera\managed"
+    Write-Host "`nBuilding Vespera C# scripts through VesperaBuilder..." -ForegroundColor Cyan
+    & $BuilderExe `
+        --project $ProjectFile `
+        --managed-only `
+        --managed-output $ManagedOut `
+        --configuration $ManagedConfiguration `
+        --dotnet $Dotnet `
+        --sdk-project (Join-Path $Root "managed\Vespera.NET\Vespera.NET.csproj") `
+        --script-tool-project (Join-Path $Root "managed\Vespera.ScriptTool\Vespera.ScriptTool.csproj")
     if ($LASTEXITCODE -ne 0) {
         throw "Vespera managed build failed with exit code $LASTEXITCODE. Previous good managed output was preserved."
     }
-    if (Test-Path $ManagedOut) { Write-Host "Managed: $ManagedOut" -ForegroundColor DarkCyan }
+    if (Test-Path $ProjectManaged) { Remove-Item $ProjectManaged -Recurse -Force }
+    New-Item -ItemType Directory -Force -Path (Split-Path -Parent $ProjectManaged) | Out-Null
+    Copy-Item $ManagedOut $ProjectManaged -Recurse -Force
+    Write-Host "Managed: $ManagedOut" -ForegroundColor DarkCyan
+    Write-Host "Editor Play managed cache: $ProjectManaged" -ForegroundColor DarkGray
 } else {
     Write-Warning "dotnet SDK not found. Native build is usable; C# scripting will be unavailable until .NET 8+ is installed."
 }

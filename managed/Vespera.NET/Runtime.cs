@@ -840,7 +840,7 @@ namespace Vespera
             => Managed.Native.ResolveCircleMotion2D(from, candidate, radius, ignore?.Id ?? 0);
     }
 
-    // Small engine-level key/value save surface for 0.6.x gameplay dogfooding.
+    // Small engine-level key/value save surface used by gameplay and reference projects.
     // Values are semantic strings in JSON so the format stays human-readable and
     // independent of live CLR object graphs.
     public static class SaveData

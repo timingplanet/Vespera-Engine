@@ -7,6 +7,9 @@ param(
 
 $ErrorActionPreference = "Stop"
 $Root = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
+$VersionText = Get-Content -LiteralPath (Join-Path $Root "CMakeLists.txt") -Raw
+if ($VersionText -notmatch 'set\(VESPERA_VERSION_LABEL\s+"([^"]+)"\)') { throw "Could not read VESPERA_VERSION_LABEL." }
+$VersionLabel = $Matches[1]
 $Stamp = Get-Date -Format "yyyyMMdd-HHmmss"
 $Work = Join-Path ([System.IO.Path]::GetTempPath()) "Vespera-ReleaseGate-$Stamp-$PID"
 $Projects = Join-Path $Work "projects"
@@ -34,6 +37,7 @@ function Test-SourcePackagePreflight {
     $RequiredFiles = @(
         "build.ps1",
         "test.ps1",
+        "test-rc.ps1",
         "export.ps1",
         "tools\build-managed-editor.ps1",
         "tools\validate_source.py",
@@ -216,7 +220,7 @@ try {
         Invoke-Step "$($Item.Name) standalone startup" { Test-RuntimeLaunch $Runtime $Item.Output }
     }
 
-    Write-Host "`nVespera 1.0.0 release gate PASSED." -ForegroundColor Green
+    Write-Host "`nVespera $VersionLabel release gate PASSED." -ForegroundColor Green
     Write-Host "Fresh Hub project -> Release portable package -> standalone launch passed."
     Write-Host "Emberlight Guild and Performance Lab also exported/launched through the ordinary shared-player path."
     Write-Host "Work directory: $Work" -ForegroundColor DarkGray

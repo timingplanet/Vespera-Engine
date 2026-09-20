@@ -2,6 +2,7 @@
 
 #include <vespera/audio/audio.hpp>
 #include <vespera/input/input.hpp>
+#include <vespera/render/render_backend.hpp>
 #include <vespera/core/game.hpp>
 #include <vespera/scene/scene.hpp>
 
@@ -12,8 +13,6 @@
 namespace vespera {
 
 class Game;
-class RenderBackend;
-
 struct ApplicationConfig {
     std::string title = "Vespera";
     int width = 1280;
@@ -22,6 +21,7 @@ struct ApplicationConfig {
     bool relative_mouse = false;
     bool escape_quits = false;
     bool vsync = true;
+    RenderBackendType renderer = RenderBackendType::Automatic;
     std::filesystem::path icon_path;
     std::filesystem::path startup_splash_image;
     std::filesystem::path startup_sound;

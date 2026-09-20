@@ -14,10 +14,11 @@ REQUIRED = [
     ROOT / "THIRD_PARTY_NOTICES.md",
     ROOT / "CONTRIBUTING.md",
     ROOT / "README.md",
+    ROOT / "test-rc.ps1",
     ROOT / "docs" / "LIMITATIONS.md",
-    ROOT / "docs" / "index.html",
-    ROOT / "docs" / "getting-started.html",
-    ROOT / "docs" / "shipping.html",
+    ROOT / "website" / "index.html",
+    ROOT / "website" / "getting-started.html",
+    ROOT / "website" / "build-and-ship.html",
     ROOT / "templates" / "2d" / "START-HERE.md",
     ROOT / "templates" / "2d" / "managed" / "StarterGame.cs",
 ]
@@ -36,7 +37,7 @@ FORBIDDEN_RELATIVE = {
 
 TEXT_SUFFIXES = {
     ".md", ".txt", ".py", ".ps1", ".cpp", ".hpp", ".h", ".c", ".cs",
-    ".cmake", ".json", ".xml", ".rml", ".rcss", ".slscene", ".slprefab",
+    ".cmake", ".json", ".xml", ".html", ".js", ".css", ".rml", ".rcss", ".slscene", ".slprefab",
     ".slui", ".vesperaproject", ".vmeta", ".yml", ".yaml", ".in",
 }
 
@@ -70,13 +71,18 @@ def check_forbidden(failures: list[str]) -> None:
     for rel in FORBIDDEN_RELATIVE:
         if (ROOT / rel).exists():
             failures.append(f"forbidden public artifact present: {rel}")
+    for child in ROOT.iterdir():
+        if child.is_dir() and (child.name.startswith("build") or child.name.startswith("release-") or child.name.startswith("dist-")):
+            failures.append(f"generated top-level directory present: {child.name}")
     for path in ROOT.rglob("*"):
-        if path.is_dir() and path.name in {"__pycache__", "bin", "obj", "builds"}:
-            failures.append(f"generated build/cache directory present: {path.relative_to(ROOT)}")
+        if path.is_dir() and path.name == "__pycache__":
+            failures.append(f"python cache present: {path.relative_to(ROOT)}")
+        if path.is_dir() and path.name == ".vespera":
+            failures.append(f"project-local generated cache present: {path.relative_to(ROOT)}")
+        if path.is_dir() and path.name in {"bin", "obj"} and any(path.parent.glob("*.csproj")):
+            failures.append(f"managed build intermediate present: {path.relative_to(ROOT)}")
         if path.is_file() and path.suffix.lower() in {".pyc", ".zip", ".log", ".tmp", ".bak", ".orig"}:
             failures.append(f"generated/private artifact present: {path.relative_to(ROOT)}")
-        if path.is_file() and path.name.startswith("Vespera.ManagedBuildDiagnostics"):
-            failures.append(f"generated managed diagnostics present: {path.relative_to(ROOT)}")
 
 
 def check_personal_data(failures: list[str]) -> None:
@@ -121,7 +127,7 @@ def check_powershell_dependencies(failures: list[str]) -> None:
                 )
 
 
-def check_release_content(failures: list[str]) -> None:
+def check_release_content(failures: list[str], expected_version: str) -> None:
     license_text = (ROOT / "LICENSE").read_text(encoding="utf-8") if (ROOT / "LICENSE").exists() else ""
     readme = (ROOT / "README.md").read_text(encoding="utf-8") if (ROOT / "README.md").exists() else ""
     cmake = (ROOT / "CMakeLists.txt").read_text(encoding="utf-8") if (ROOT / "CMakeLists.txt").exists() else ""
@@ -134,12 +140,12 @@ def check_release_content(failures: list[str]) -> None:
 
     if "MIT License" not in license_text or "Timingplanet" not in license_text:
         failures.append("LICENSE is not the expected MIT grant for Timingplanet")
-    if 'set(VESPERA_VERSION_LABEL "1.0.0")' not in cmake or 'SERVER_VERSION = "1.0.0"' not in mcp:
-        failures.append("public release version surfaces are not stamped 1.0.0")
-    if "1.0.0-rc." in readme:
+    if f'set(VESPERA_VERSION_LABEL "{expected_version}")' not in cmake or f'SERVER_VERSION = "{expected_version}"' not in mcp:
+        failures.append(f"public release version surfaces are not stamped {expected_version}")
+    if "-" not in expected_version and re.search(r"1\.1\.0-(?:alpha|beta|rc)\.", readme, re.I):
         failures.append("README still advertises a prerelease version")
-    if "Windows x64" not in readme or "Direct3D 12" not in readme:
-        failures.append("README is missing the 1.0 platform matrix")
+    if "Windows x64" not in readme:
+        failures.append("README is missing the supported Windows x64 platform")
     if "2D / UI Foundation (Experimental)" not in limits:
         failures.append("limitations doc does not state the experimental 2D product scope")
     if "2D / UI FOUNDATION" not in hub.upper():
@@ -165,7 +171,7 @@ class _LinkCollector(HTMLParser):
 
 
 def check_website_links(failures: list[str]) -> None:
-    website = ROOT / "docs"
+    website = ROOT / "website"
     for page in website.glob("*.html"):
         parser = _LinkCollector()
         parser.feed(page.read_text(encoding="utf-8"))
@@ -184,6 +190,7 @@ def check_website_links(failures: list[str]) -> None:
 def check_markdown_links(failures: list[str]) -> None:
     public_docs = [
         ROOT / "README.md",
+    ROOT / "test-rc.ps1",
         ROOT / "CONTRIBUTING.md",
         ROOT / "docs" / "GETTING_STARTED.md",
         ROOT / "docs" / "FIRST_GAME.md",
@@ -203,16 +210,26 @@ def check_markdown_links(failures: list[str]) -> None:
                 failures.append(f"broken Markdown link in {path.relative_to(ROOT)}: {link}")
 
 
+def source_version_label() -> str:
+    cmake = (ROOT / "CMakeLists.txt").read_text(encoding="utf-8")
+    match = re.search(r'set\(VESPERA_VERSION_LABEL\s+"([^"]+)"\)', cmake)
+    if not match:
+        raise SystemExit("Could not read VESPERA_VERSION_LABEL from CMakeLists.txt")
+    return match.group(1)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Validate a cleaned Vespera public release tree")
-    parser.parse_args()
+    parser.add_argument("--expect-version", help="Exact public version; defaults to VESPERA_VERSION_LABEL")
+    args = parser.parse_args()
+    expected_version = args.expect_version or source_version_label()
 
     failures: list[str] = []
     check_required(failures)
     check_forbidden(failures)
     check_personal_data(failures)
     check_powershell_dependencies(failures)
-    check_release_content(failures)
+    check_release_content(failures, expected_version)
     check_website_links(failures)
     check_markdown_links(failures)
 

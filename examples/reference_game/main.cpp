@@ -191,7 +191,7 @@ public:
             catalog_report.broken_dependencies, catalog_report.stale_fallback_paths
         ));
 
-        // 0.9.3 engine-native runtime UI dogfood. The .slui document remains
+        // Runtime UI reference path. The .slui document remains
         // renderer-independent; a CPU draw packet is built from layout + source
         // images and the active renderer consumes only vertices/atlas pixels.
         if (const auto* ui_asset = asset_catalog_.find("ui/reference_hud.slui")) {
@@ -1009,13 +1009,41 @@ private:
 
 int main(int argc, char** argv) {
     bool runtime_automation = false;
+    vespera::RenderBackendType requested_renderer = vespera::RenderBackendType::Automatic;
     for (int i = 1; i < argc; ++i) {
-        if (std::string_view(argv[i]) == "--automation") runtime_automation = true;
+        const std::string_view arg = argv[i] ? std::string_view(argv[i]) : std::string_view{};
+        if (arg == "--automation") {
+            runtime_automation = true;
+            continue;
+        }
+        if (arg == "--renderer" || arg.starts_with("--renderer=")) {
+            std::string_view value;
+            if (arg == "--renderer") {
+                if (i + 1 >= argc) {
+                    vespera::log::error("--renderer requires auto, d3d12, vulkan, or null");
+                    return 2;
+                }
+                value = argv[++i] ? std::string_view(argv[i]) : std::string_view{};
+            } else {
+                value = arg.substr(std::string_view("--renderer=").size());
+            }
+            const auto parsed = vespera::parse_render_backend_type(value);
+            if (!parsed) {
+                vespera::log::error(std::format(
+                    "Unknown renderer backend '{}' (expected auto, d3d12, vulkan, or null).", value));
+                return 2;
+            }
+            requested_renderer = *parsed;
+            continue;
+        }
+        vespera::log::error(std::format("Unknown Vespera reference-game argument: {}", arg));
+        return 2;
     }
     ReferenceGame game(runtime_automation);
     vespera::Application app;
 
     vespera::ApplicationConfig config;
+    config.renderer = requested_renderer;
     config.title = std::format("Vespera Engine {} - C# Gameplay", vespera::kEngineVersion);
     vespera::VesperaProject startup_project;
     const auto startup_project_result = vespera::load_vespera_project(

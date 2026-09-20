@@ -1,80 +1,44 @@
-# Sprite rendering - 0.5.0
+# Sprites & Animation
 
-Vespera remains sprite-first: characters, enemies, pickups, decorations, and effects should be able to remain sprite-based without requiring 3D meshes.
+Vespera supports billboard-style sprite rendering alongside mesh content. A Sprite Renderer controls size, tint, animation clip, speed, time offset, and paused state.
 
-Starting in 0.3.0, sprites are no longer special standalone scene objects. They are rendered by a **Sprite Renderer component attached to a normal Entity**.
+## Create a sprite entity
 
-## Entity + Transform + Sprite Renderer
+Use **Create Sprite Entity** from the editor. Select it and configure the Sprite Renderer in the Inspector.
 
-Every Entity has a required Transform containing:
+Sprite animation can use authored sprite clips. The editor can create and edit Sprite Clip assets/resources, and the Asset Catalog recognizes `.slspriteclip` and `.slspritesheet` files.
 
-- world position
-- XYZ rotation
-- XYZ scale
+## C# control
 
-An optional `SpriteRendererComponent` contains:
-
-- world-space base width/height
-- static/fallback texture
-- optional animation clip name
-- animation speed multiplier
-- animation time offset
-- paused state
-- RGBA tint
-
-Directional actor facing comes from **Transform Y rotation**. The renderer still draws an upright cylindrical billboard: the quad rotates around world Y to face the camera horizontally while remaining upright regardless of camera pitch.
-
-Billboard orientation and entity facing are separate concepts. The quad faces the camera; Transform Y rotation tells the directional-frame resolver which side of the entity the camera should see.
-
-Transform scale multiplies the Sprite Renderer base size.
-
-## Animation clips
-
-`SpriteAnimationClip` remains a scene resource with:
-
-- name
-- direction count: 1, 4, or 8
-- frame count per direction
-- frames per second
-- loop/one-shot behavior
-- texture reference for each direction/frame pair
-
-Frames are stored direction-major. For an 8-direction, 2-frame clip:
-
-```text
-D0F0 D0F1 D1F0 D1F1 ... D7F0 D7F1
+```csharp
+var sprite = Entity.SpriteRenderer;
+if (sprite is not null)
+{
+    sprite.Size = new Vector2(1.5f, 2.0f);
+    sprite.Tint = new Color(1, 1, 1, 1);
+    sprite.Play("Run", speed: 1.25f);
+}
 ```
 
-Direction 0 is the entity front. Additional indices rotate clockwise when viewed from above.
+Animation helpers include:
 
-## Renderer-independent resolution
+```csharp
+sprite.Pause();
+sprite.Resume();
+sprite.Restart();
+sprite.Stop();
+```
 
-`resolve_sprite_frame()` lives outside the D3D12 backend. It receives the Scene, Entity, Sprite Renderer component, and runtime time and returns:
+`Play` sets the clip and speed and can restart animation time.
 
-- resolved texture
-- direction index
-- animation frame index
-- whether a clip was actually used
+## Sprite sheets
 
-This keeps D3D12, future Vulkan, editor previews, tests, and gameplay tooling on one directional/animation rule set.
+A `.slspritesheet` descriptor references a source texture. Keep the texture and sheet in the Asset Catalog so the dependency system can package them together.
 
-## Depth and alpha
+## Scene resources
 
-Sprite quads use the same depth target as sector geometry. Transparent texels are alpha-cutout with a 0.5 threshold; opaque pixels participate in normal depth testing.
+Scene Text can also contain sprite clip resources referenced by Sprite Renderer components. When working with those clips, treat their names as scene-local animation resources and keep names unique enough to be clear in the editor.
 
-Smooth alpha blending and sorted translucency are later concerns.
+## Moving sprite assets
 
-## Editor authoring
-
-The Entity Inspector exposes the required Transform and lets the user add/remove Sprite Renderer. Sprite Renderer fields expose size, fallback texture, clip, animation timing, pause, and tint.
-
-Sprite clips remain directly authorable from Project / Assets with create/duplicate/delete/rename, 1/4/8 directional layouts, frame counts, FPS/looping, and per-frame texture assignment.
-
-Disabled Entities remain authorable in the editor but are skipped by runtime sprite rendering.
-
-## Reference entities
-
-The 0.4.5 reference project keeps the procedural 8-direction × 2-frame `Watcher Walk` test art on two sprite-rendered Entities. A third `Gameplay Marker` Entity has Transform only and intentionally produces no rendered sprite.
-
-
-0.4.5 also ships `assets/prefabs/watcher.slprefab`; the reference runtime loads and instantiates an additional watcher through the public prefab API to ensure directional sprite components survive external prefab serialization.
+Sprite sheets and clips are dependency-aware catalog assets. Use controlled Move / Rename operations for referenced assets so stable identities and fallback paths can be repaired.

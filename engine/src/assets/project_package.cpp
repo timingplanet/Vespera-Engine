@@ -219,9 +219,22 @@ bool contains_hostfxr(const std::filesystem::path& dotnet_root) {
     const auto fxr_root = dotnet_root / "host" / "fxr";
     if (!std::filesystem::is_directory(fxr_root, ec) || ec) return false;
     for (std::filesystem::recursive_directory_iterator it(fxr_root, ec), end; it != end && !ec; it.increment(ec)) {
-        if (it->is_regular_file(ec) && !ec && it->path().filename() == "hostfxr.dll") return true;
+        if (!it->is_regular_file(ec) || ec) continue;
+        const auto filename = it->path().filename().string();
+        if (filename == "hostfxr.dll" || filename == "libhostfxr.so" || filename == "libhostfxr.dylib") return true;
     }
     return false;
+}
+
+bool is_shared_player_executable(const std::filesystem::path& executable) {
+    std::string stem = executable.stem().string();
+    std::transform(stem.begin(), stem.end(), stem.begin(), [](unsigned char ch) {
+        return static_cast<char>(std::tolower(ch));
+    });
+    stem.erase(std::remove_if(stem.begin(), stem.end(), [](unsigned char ch) {
+        return ch == '_' || ch == '-' || std::isspace(ch);
+    }), stem.end());
+    return stem == "vesperaplayer";
 }
 
 bool validate_packaged_payload(
@@ -238,6 +251,19 @@ bool validate_packaged_payload(
         error = "package self-check failed: packaged runtime executable is missing";
         return false;
     }
+#if !defined(_WIN32)
+    if (!options.runtime_executable.empty()) {
+        std::error_code permission_error;
+        const auto permissions = std::filesystem::status(result.packaged_runtime, permission_error).permissions();
+        constexpr auto executable_bits = std::filesystem::perms::owner_exec
+            | std::filesystem::perms::group_exec
+            | std::filesystem::perms::others_exec;
+        if (permission_error || (permissions & executable_bits) == std::filesystem::perms::none) {
+            error = "package self-check failed: packaged Linux runtime is not executable";
+            return false;
+        }
+    }
+#endif
     if (!project.managed_assembly.empty()) {
         const auto managed = result.package_directory / "managed";
         const std::array<std::filesystem::path, 3> required{{
@@ -254,7 +280,7 @@ bool validate_packaged_payload(
         if (options.managed_deployment == ManagedDeploymentMode::Portable) {
             const auto dotnet = result.package_directory / "dotnet";
             if (!contains_hostfxr(dotnet)) {
-                error = "package self-check failed: portable managed payload has no host/fxr/*/hostfxr.dll";
+                error = "package self-check failed: portable managed payload has no host/fxr hostfxr library";
                 return false;
             }
             const auto runtime = dotnet / "shared" / "Microsoft.NETCore.App" / result.dotnet_runtime_version;
@@ -266,7 +292,7 @@ bool validate_packaged_payload(
         }
     }
 
-    if (!options.runtime_executable.empty() && options.runtime_executable.stem() == "vespera_player") {
+    if (!options.runtime_executable.empty() && is_shared_player_executable(options.runtime_executable)) {
         const auto branding = result.package_directory / "branding";
         for (const char* filename : {"vespera_icon_window.png", "vespera_splash.png", "vespera_logo_sting.wav"}) {
             if (!is_regular_file_clean(branding / filename)) {
@@ -545,7 +571,7 @@ bool write_package_report(
     out << "Executable: " << (result.packaged_runtime.empty() ? std::string("<content-only>") : result.packaged_runtime.filename().string()) << "\n";
     if (!result.packaged_runtime.empty() && result.packaged_runtime.extension() == ".exe") {
         const bool shared_player = !options.runtime_executable.empty()
-            && options.runtime_executable.stem() == "vespera_player";
+            && is_shared_player_executable(options.runtime_executable);
         if (shared_player) {
             out << "Windows subsystem: " << (options.configuration == "Release" ? "GUI (no console)" : "Console/diagnostic") << "\n";
             out << "Runtime log: %LOCALAPPDATA%\\Vespera\\Logs\\" << result.packaged_runtime.stem().string() << ".log\n";
@@ -730,6 +756,23 @@ ProjectPackageResult export_project_package(
             result.message = std::move(copy_error);
             return result;
         }
+#if !defined(_WIN32)
+        // Preserve the launchable runtime contract explicitly. Some archive/copy
+        // environments are less reliable about carrying executable mode bits.
+        std::error_code permission_error;
+        auto source_permissions = std::filesystem::status(options.runtime_executable, permission_error).permissions();
+        if (!permission_error) {
+            source_permissions |= std::filesystem::perms::owner_exec
+                | std::filesystem::perms::group_exec
+                | std::filesystem::perms::others_exec;
+            std::filesystem::permissions(
+                result.packaged_runtime, source_permissions, std::filesystem::perm_options::replace, permission_error);
+        }
+        if (permission_error) {
+            result.message = "could not preserve packaged runtime permissions: " + permission_error.message();
+            return result;
+        }
+#endif
         ++result.copied_runtime_files;
 
         // Keep the source-tree Release player console-friendly for direct
@@ -738,7 +781,7 @@ ProjectPackageResult export_project_package(
         // without requiring a second native runtime target.
         if (options.configuration == "Release"
             && result.packaged_runtime.extension() == ".exe"
-            && options.runtime_executable.stem() == "vespera_player") {
+            && is_shared_player_executable(options.runtime_executable)) {
             std::string subsystem_error;
             if (!patch_windows_pe_subsystem(result.packaged_runtime, 2u, subsystem_error)) {
                 result.message = std::move(subsystem_error);
@@ -777,7 +820,7 @@ ProjectPackageResult export_project_package(
                     return result;
                 }
                 result.copied_runtime_files += copied;
-            } else if (options.runtime_executable.stem() == "vespera_player") {
+            } else if (is_shared_player_executable(options.runtime_executable)) {
                 result.message = std::string("shared vespera_player runtime is missing its staged ")
                     + directory + " directory: " + support_source.string();
                 return result;

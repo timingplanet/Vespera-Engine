@@ -1,0 +1,46 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Use the Project Hub, Hierarchy, Scene/Game views, Inspector, Project browser, Play Mode, Project Settings, and Build Game."><title>Editor Guide — Vespera Engine Docs</title><link rel="icon" href="assets/vespera_icon.png"><link rel="stylesheet" href="styles.css"></head><body><header class="topbar"><a class="brand" href="index.html"><img src="assets/vespera_icon.png" alt=""><span>Vespera Engine</span><b>Docs</b></a><button class="search-button" type="button" data-search-open><span>Search docs</span><kbd>Ctrl K</kbd></button></header><div class="wiki-layout"><aside class="left-rail"><div class="rail-scroll"><nav class="doc-nav" aria-label="Documentation"><div class="nav-group"><div class="nav-group-title">Start here</div><a href="index.html">Documentation Home</a><a href="getting-started.html">Getting Started</a><a href="first-game.html">Your First Game</a><a href="project-structure.html">Project Structure</a><a href="file-types.html">File Types</a><a href="editor.html" aria-current="page">Editor Guide</a></div><div class="nav-group"><div class="nav-group-title">World &amp; content</div><a href="scenes-entities.html">Scenes &amp; Entities</a><a href="prefabs.html">Prefabs</a><a href="asset-pipeline.html">Asset Pipeline</a><a href="materials-textures.html">Textures &amp; Materials</a><a href="sprites.html">Sprites &amp; Animation</a><a href="audio.html">Audio</a></div><div class="nav-group"><div class="nav-group-title">Gameplay</div><a href="input.html">Input</a><a href="managed-scripting.html">C# Scripting</a><a href="gameplay-api.html">Gameplay API</a><a href="lua-scripting.html">Lua Scripting</a></div><div class="nav-group"><div class="nav-group-title">UI &amp; 2D</div><a href="rmlui.html">RmlUi</a><a href="runtime-ui.html">Runtime UI API</a><a href="two-d-foundation.html">2D / UI Foundation</a></div><div class="nav-group"><div class="nav-group-title">Build &amp; help</div><a href="build-and-ship.html">Build &amp; Ship</a><a href="exporting.html">Exporting Reference</a><a href="troubleshooting.html">Troubleshooting</a><a href="limitations.html">Current Limitations</a></div><div class="nav-group"><div class="nav-group-title">Advanced</div><a href="scene-format.html">Scene Text Format</a><a href="extensions.html">Editor Extensions</a><a href="automation-mcp.html">Automation / MCP</a></div></nav></div></aside><main class="article-wrap"><article class="article"><div class="doc-breadcrumb"><a href="index.html">Documentation</a><span>›</span>Editor Guide</div><h1 id="editor-guide">Editor Guide</h1>
+<p>The Vespera Editor is organized around a project, an authored scene, project assets, and a runtime Play state. The safest workflow is to perform normal authoring through the editor rather than hand-editing serialized files.</p>
+<h2 id="project-hub-and-opening-projects">Project Hub and opening projects</h2>
+<p>Use <code>./vespera.ps1</code> to open the Project Hub. Create a starter project or open an existing <code>.vesperaproject</code> workspace.</p>
+<p>Inside the editor, <strong>File → Open Project…</strong> changes workspaces. <strong>File → Open Scene…</strong> opens a scene directly. Saving uses <code>Ctrl+S</code>; Save As uses <code>Ctrl+Shift+S</code>.</p>
+<h2 id="hierarchy">Hierarchy</h2>
+<p>The Hierarchy contains sectors and entities. Use it to:</p>
+<ul>
+<li>create empty entities, primitive mesh entities, sprite entities, trigger volumes, point lights, and sectors;</li>
+<li>select and reorder authored objects;</li>
+<li>parent, unparent, duplicate, and delete entities;</li>
+<li>access prefab Apply, Revert, and Unpack actions for prefab instances.</li>
+</ul>
+<p>Useful shortcuts include <code>Ctrl+D</code> for duplicate and <code>Delete</code> for deletion.</p>
+<h2 id="scene-view">Scene view</h2>
+<p>The Scene view is for authoring. It supports View, Move, Rotate, and Scale tools.</p>
+<p>When the Scene view is focused, the tool hotkeys are:</p>
+<ul>
+<li><code>Q</code> — View</li>
+<li><code>W</code> — Move</li>
+<li><code>E</code> — Rotate</li>
+<li><code>R</code> — Scale</li>
+<li><code>F</code> — frame/focus the current authoring view</li>
+</ul>
+<p>The free camera uses WASD for horizontal movement, <code>Q</code>/<code>E</code> vertically, and Shift for faster movement while navigating.</p>
+<h2 id="inspector">Inspector</h2>
+<p>The Inspector edits the selected entity, component, asset, material, clip, or other authoring object.</p>
+<p>For entities, the Inspector exposes identity fields such as name, tag, layer, enabled state, Transform, built-in components, prefab source state, and attached C# components. Fields marked with <code>[Expose]</code> in project C# appear here after managed metadata is built/refreshed.</p>
+<h2 id="project-assets">Project / Assets</h2>
+<p>The Project browser displays the Asset Catalog. Depending on type, you can open a scene, instantiate a prefab, open UI authoring, inspect import settings, copy a stable asset ID or relative path, and run <strong>Move / Rename…</strong> or delete-safety checks.</p>
+<p>Use <strong>Refresh Asset Catalog</strong> after external filesystem changes. Prefer controlled editor moves for referenced assets.</p>
+<h2 id="play-mode">Play Mode</h2>
+<p>Play runs the current game state through the runtime path. Project input bindings drive Play Mode just as they drive standalone builds.</p>
+<p>Use Stop to return to edit state. For gameplay changes, build project C# and re-enter Play as needed. Vespera preserves a last-good managed build when a new C# build fails so a compiler error does not replace working output.</p>
+<h2 id="project-settings">Project Settings</h2>
+<p>Project Settings contains the game's startup/runtime/build configuration. Important sections include:</p>
+<ul>
+<li><strong>General</strong> — project name and project paths.</li>
+<li><strong>Startup &amp; Runtime</strong> — startup scene, startup RML UI, optional Lua entry, window settings, relative mouse, Escape behavior, VSync.</li>
+<li><strong>Input Actions</strong> — key, gamepad button, and gamepad axis bindings with scale and deadzone.</li>
+<li><strong>Build &amp; Package</strong> — company/product metadata, executable name, build output, and .NET deployment mode.</li>
+</ul>
+<h2 id="build-game">Build Game</h2>
+<p>Use <strong>Build → Build Game…</strong> or <code>Ctrl+Shift+B</code>. The Build menu also provides direct Development and Release actions plus Build &amp; Run for Development.</p>
+<p>A normal game developer should use this editor workflow. The PowerShell export scripts are useful for automation and source-tree workflows, but they are not required for ordinary project authoring.</p>
+</article></main><aside class="right-rail"><div class="toc"><div class="toc-title">On this page</div><a class="h2" href="#project-hub-and-opening-projects">Project Hub and opening projects</a><a class="h2" href="#hierarchy">Hierarchy</a><a class="h2" href="#scene-view">Scene view</a><a class="h2" href="#inspector">Inspector</a><a class="h2" href="#project-assets">Project / Assets</a><a class="h2" href="#play-mode">Play Mode</a><a class="h2" href="#project-settings">Project Settings</a><a class="h2" href="#build-game">Build Game</a></div></aside></div><footer class="site-footer"><span>Vespera Engine documentation</span><span>MIT License · Timingplanet</span></footer><div class="search-modal" data-search-modal hidden><div class="search-panel" role="dialog" aria-modal="true"><div class="search-row"><input data-search-input type="search" placeholder="Search Vespera documentation…" autocomplete="off"><button data-search-close>Close</button></div><div class="search-results" data-search-results></div></div></div><script src="search-index.js"></script><script src="site.js"></script></body></html>

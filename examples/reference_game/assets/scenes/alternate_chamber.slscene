@@ -1,5 +1,5 @@
 sectorline_scene 14
-# Vespera Engine 0.6.3 alternate scene used to dogfood safe C# scene switching.
+# Alternate scene used to exercise safe C# scene switching.
 # Textures are asset references by name and are registered by the reference game
 # until the real asset importer/resource database lands.
 
@@ -81,7 +81,7 @@ endentity
 entity 1003 1 "Gameplay Marker"
   identity "marker" "Gameplay"
   transform 0 0.30 4.25 0 0 0 1 1 1
-  managed_script "ReferenceGame.Scripts.GameplayApiDogfood" 1
+  managed_script "ReferenceGame.Scripts.GameplayShowcase" 1
   end_managed_script
 endentity
 
@@ -94,7 +94,7 @@ entity 1004 1 "Chamber Threshold"
   end_managed_script
 endentity
 
-# First real-time lighting dogfood. The current renderer evaluates the two closest
+# Real-time lighting reference. The current renderer evaluates the two closest
 # enabled point lights to the active camera with radial attenuation.
 entity 1005 1 "Corridor Amber Light"
   identity "light" "Lighting"

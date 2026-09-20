@@ -16,9 +16,12 @@ add_library(vespera_engine STATIC
     src/core/log.cpp
     src/project/project.cpp
     src/project/project_templates.cpp
+    src/render/render_backend.cpp
+    src/render/null_renderer.cpp
     src/render/view_frustum.cpp
     src/runtime/player_project.cpp
     src/input/input.cpp
+    src/platform/process.cpp
     src/scripting/managed_script_host.cpp
     src/scene/scene_io.cpp
     src/scene/scene_hierarchy.cpp
@@ -52,6 +55,9 @@ target_link_libraries(vespera_engine
     PUBLIC
         SDL3::SDL3-static
 )
+if(UNIX AND NOT APPLE)
+    target_link_libraries(vespera_engine PRIVATE ${CMAKE_DL_LIBS})
+endif()
 
 target_compile_features(vespera_engine PUBLIC cxx_std_20)
 
@@ -79,17 +85,24 @@ else()
     endif()
 endif()
 
+if(VESPERA_VULKAN_RENDERER)
+    target_sources(vespera_engine PRIVATE
+        src/render/vulkan/vulkan_renderer.cpp
+    )
+    # VulkanNativeAccess is a public editor/runtime integration seam, so the
+    # Vulkan headers and no-prototype mode must be visible to consumers that
+    # include that bridge. Dispatch remains dynamically loaded by the engine.
+    target_link_libraries(vespera_engine PUBLIC Vulkan::Headers)
+    target_compile_definitions(vespera_engine PUBLIC VESPERA_HAS_VULKAN=1 VK_NO_PROTOTYPES=1)
+endif()
+
 if(WIN32)
     target_sources(vespera_engine PRIVATE
         src/render/d3d12/d3d12_renderer.cpp
     )
     target_compile_definitions(vespera_engine
-        PUBLIC NOMINMAX WIN32_LEAN_AND_MEAN
+        PUBLIC NOMINMAX WIN32_LEAN_AND_MEAN _CRT_SECURE_NO_WARNINGS
         PRIVATE VESPERA_HAS_D3D12=1
     )
     target_link_libraries(vespera_engine PRIVATE d3d12 d3dcompiler dxgi dxguid windowscodecs ole32 gdi32)
-else()
-    target_sources(vespera_engine PRIVATE
-        src/render/null_renderer.cpp
-    )
 endif()

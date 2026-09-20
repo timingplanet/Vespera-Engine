@@ -1,0 +1,194 @@
+name: Linux CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  logic-tests:
+    name: GCC logic tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure renderer-independent tests
+        run: cmake -S . -B build-tests -G Ninja -DVESPERA_TESTS_ONLY=ON -DVESPERA_WARNINGS_AS_ERRORS=ON
+      - name: Build
+        run: cmake --build build-tests
+      - name: Test
+        run: ctest --test-dir build-tests --output-on-failure
+      - name: Validate source tree
+        run: python3 tools/validate_source.py
+      - name: Validate release tooling
+        run: python3 tools/test-release-tooling.py
+      - name: Validate public source tree
+        run: python3 tools/validate_public_release.py
+
+  clang-logic-tests:
+    name: Clang logic tests
+    runs-on: ubuntu-latest
+    env:
+      CC: clang
+      CXX: clang++
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure renderer-independent tests
+        run: cmake -S . -B build-tests-clang -G Ninja -DVESPERA_TESTS_ONLY=ON -DVESPERA_WARNINGS_AS_ERRORS=ON
+      - name: Build
+        run: cmake --build build-tests-clang
+      - name: Test
+        run: ctest --test-dir build-tests-clang --output-on-failure
+
+  linux-vulkan-runtime:
+    name: Vulkan + Linux runtime/editor smoke
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.401'
+      - name: Install Linux/Vulkan build and software-rendering dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            ninja-build spirv-tools xvfb xauth vulkan-tools libvulkan1 mesa-vulkan-drivers \
+            libx11-dev libxext-dev libxrandr-dev libxcursor-dev libxi-dev \
+            libxfixes-dev libxss-dev libxtst-dev libwayland-dev libxkbcommon-dev \
+            libdecor-0-dev libdbus-1-dev libudev-dev
+      - name: Validate checked-in Vulkan shaders
+        run: |
+          python3 tools/generate_vulkan_bootstrap_shaders.py
+          python3 tools/generate_vulkan_lighting_shaders.py
+          spirv-val --target-env vulkan1.0 engine/shaders/vulkan/bootstrap_world.vert.spv
+          spirv-val --target-env vulkan1.0 engine/shaders/vulkan/bootstrap_world.frag.spv
+          spirv-val --target-env vulkan1.0 engine/shaders/vulkan/lighting_world.vert.spv
+          spirv-val --target-env vulkan1.0 engine/shaders/vulkan/lighting_world.frag.spv
+          git diff --exit-code -- engine/shaders/vulkan engine/src/render/vulkan/vulkan_bootstrap_shaders.hpp engine/src/render/vulkan/vulkan_lighting_shaders.hpp
+      - name: Configure full Linux build
+        run: >-
+          cmake -S . -B build-vulkan -G Ninja
+          -DVESPERA_BUILD_EDITOR=ON
+          -DVESPERA_BUILD_EXAMPLES=ON
+          -DVESPERA_BUILD_TOOLS=ON
+          -DVESPERA_RMLUI_UI=ON
+          -DVESPERA_LUA_SCRIPTING=ON
+          -DVESPERA_VULKAN_RENDERER=ON
+          -DVESPERA_WARNINGS_AS_ERRORS=ON
+          -DCMAKE_BUILD_TYPE=Debug
+      - name: Build Linux player, reference game, Hub, Editor and packaging tools
+        run: cmake --build build-vulkan --target vespera_player vespera_reference_game vespera_project_hub vespera_editor vespera_builder vespera_packager
+      - name: Stage reference C# runtime
+        run: python3 tools/build-managed-runtime.py --stage build-vulkan/examples/reference_game/managed --configuration Debug --framework net10.0
+      - name: Show software Vulkan device
+        run: xvfb-run -a -s "-screen 0 1280x720x24" vulkaninfo --summary
+      - name: Smoke reference game through Vulkan + C# + Lua + UI
+        env:
+          VESPERA_SMOKE_FRAMES: '90'
+        run: |
+          cd build-vulkan/examples/reference_game
+          xvfb-run -a -s "-screen 0 1280x720x24" ./vespera_reference_game --renderer vulkan 2>&1 | tee /tmp/vespera-reference-linux.log
+          grep -q "Vulkan initialized" /tmp/vespera-reference-linux.log
+          grep -q ".NET runtime online" /tmp/vespera-reference-linux.log
+          grep -q "Lua runtime online" /tmp/vespera-reference-linux.log
+          grep -q "Smoke mode complete" /tmp/vespera-reference-linux.log
+      - name: Smoke Project Hub
+        env:
+          VESPERA_SMOKE_FRAMES: '30'
+        run: |
+          cd build-vulkan/examples/project_hub
+          xvfb-run -a -s "-screen 0 1280x720x24" ./vespera_project_hub 2>&1 | tee /tmp/vespera-hub-linux.log
+          grep -q "Smoke mode complete" /tmp/vespera-hub-linux.log
+      - name: Smoke Linux Vulkan Editor
+        env:
+          VESPERA_SMOKE_FRAMES: '30'
+        run: |
+          cd build-vulkan/editor
+          xvfb-run -a -s "-screen 0 1280x720x24" ./vespera_editor 2>&1 | tee /tmp/vespera-editor-linux.log
+          grep -q "Vulkan initialized" /tmp/vespera-editor-linux.log
+          grep -q "Editor renderer: Vulkan" /tmp/vespera-editor-linux.log
+          grep -q "Smoke mode complete" /tmp/vespera-editor-linux.log
+          grep -Eq "Smoke renderer stats: scene_passes=[1-9][0-9]* world_draw_calls=[1-9][0-9]*" /tmp/vespera-editor-linux.log
+      - name: Smoke native Build Game pipeline
+        run: |
+          rm -rf /tmp/vespera-linux-export /tmp/vespera-editor-managed
+          ./build-vulkan/tools/builder/vespera_builder \
+            --project examples/reference_game/VesperaReference.vesperaproject \
+            --output /tmp/vespera-linux-export \
+            --runtime build-vulkan/runtime/player/vespera_player \
+            --configuration Development \
+            --dotnet "$(command -v dotnet)" \
+            --sdk-project managed/Vespera.NET/Vespera.NET.csproj \
+            --script-tool-project managed/Vespera.ScriptTool/Vespera.ScriptTool.csproj
+          test -x /tmp/vespera-linux-export/VesperaReferenceGame
+          test -f /tmp/vespera-linux-export/managed/ReferenceGame.Scripts.dll
+          ./build-vulkan/tools/builder/vespera_builder \
+            --project examples/reference_game/VesperaReference.vesperaproject \
+            --managed-only \
+            --managed-output /tmp/vespera-editor-managed \
+            --configuration Debug \
+            --dotnet "$(command -v dotnet)" \
+            --sdk-project managed/Vespera.NET/Vespera.NET.csproj \
+            --script-tool-project managed/Vespera.ScriptTool/Vespera.ScriptTool.csproj
+          test -f /tmp/vespera-editor-managed/Vespera.ScriptMetadata.txt
+          test -f /tmp/vespera-editor-managed/ReferenceGame.Scripts.dll
+      - name: Validate installed Linux distribution
+        run: |
+          DOTNET_BIN="$(readlink -f "$(command -v dotnet)")"
+          python3 tools/package-engine.py \
+            --platform linux \
+            --build-dir build-vulkan \
+            --configuration Debug \
+            --output-dir /tmp/vespera-release \
+            --dotnet-root "$(dirname "$DOTNET_BIN")"
+          STAGE="$(find /tmp/vespera-release/stage -mindepth 1 -maxdepth 1 -type d -name 'VesperaEngine-*-Linux-x64' -print -quit)"
+          test -n "$STAGE"
+          python3 tools/validate-distribution.py \
+            --root "$STAGE" \
+            --platform linux \
+            --require-dotnet \
+            --run-tool-smoke \
+            --reject-unlisted
+          ARCHIVE="$(find /tmp/vespera-release -maxdepth 1 -type f -name 'VesperaEngine-*-Linux-x64.tar.gz' -print -quit)"
+          test -n "$ARCHIVE"
+          python3 tools/validate-release-archive.py \
+            --archive "$ARCHIVE" \
+            --platform linux \
+            --require-dotnet \
+            --run-tool-smoke
+      - name: Smoke installed Linux product workflow
+        env:
+          VESPERA_SMOKE_FRAMES: '45'
+        run: |
+          STAGE="$(find /tmp/vespera-release/stage -mindepth 1 -maxdepth 1 -type d -name 'VesperaEngine-*-Linux-x64' -print -quit)"
+          test -n "$STAGE"
+          WORK=/tmp/vespera-installed-workflow
+
+          cd "$STAGE"
+          xvfb-run -a -s "-screen 0 1280x720x24" ./VesperaHub 2>&1 | tee /tmp/vespera-installed-hub-linux.log
+          grep -q "Smoke mode complete" /tmp/vespera-installed-hub-linux.log
+
+          cd "$GITHUB_WORKSPACE"
+          python3 tools/validate-installed-workflow.py \
+            --root "$STAGE" \
+            --platform linux \
+            --configuration Release \
+            --managed-deployment portable \
+            --work-dir "$WORK"
+          PROJECT="$(cat "$WORK/project-result.txt")"
+          test -f "$PROJECT"
+
+          cd "$STAGE"
+          xvfb-run -a -s "-screen 0 1280x720x24" ./VesperaEditor --renderer=vulkan "$PROJECT" \
+            2>&1 | tee /tmp/vespera-installed-editor-linux.log
+          grep -q "Vulkan initialized" /tmp/vespera-installed-editor-linux.log
+          grep -q "Editor renderer: Vulkan" /tmp/vespera-installed-editor-linux.log
+          grep -q "Smoke mode complete" /tmp/vespera-installed-editor-linux.log
+          grep -Eq "Smoke renderer stats: scene_passes=[1-9][0-9]* world_draw_calls=[1-9][0-9]*" /tmp/vespera-installed-editor-linux.log
+
+          VESPERA_SMOKE_FRAMES=30 xvfb-run -a -s "-screen 0 1280x720x24" \
+            "$WORK/export/Vespera3DGame" --renderer vulkan \
+            2>&1 | tee /tmp/vespera-installed-export-linux.log
+          grep -q "Vulkan initialized" /tmp/vespera-installed-export-linux.log
+          grep -q ".NET runtime online" /tmp/vespera-installed-export-linux.log
+          grep -q "Smoke mode complete" /tmp/vespera-installed-export-linux.log

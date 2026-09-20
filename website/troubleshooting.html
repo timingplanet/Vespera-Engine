@@ -1,0 +1,52 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Common build, project, scripting, asset, UI, input, and packaging problems and what to check first."><title>Troubleshooting — Vespera Engine Docs</title><link rel="icon" href="assets/vespera_icon.png"><link rel="stylesheet" href="styles.css"></head><body><header class="topbar"><a class="brand" href="index.html"><img src="assets/vespera_icon.png" alt=""><span>Vespera Engine</span><b>Docs</b></a><button class="search-button" type="button" data-search-open><span>Search docs</span><kbd>Ctrl K</kbd></button></header><div class="wiki-layout"><aside class="left-rail"><div class="rail-scroll"><nav class="doc-nav" aria-label="Documentation"><div class="nav-group"><div class="nav-group-title">Start here</div><a href="index.html">Documentation Home</a><a href="getting-started.html">Getting Started</a><a href="first-game.html">Your First Game</a><a href="project-structure.html">Project Structure</a><a href="file-types.html">File Types</a><a href="editor.html">Editor Guide</a></div><div class="nav-group"><div class="nav-group-title">World &amp; content</div><a href="scenes-entities.html">Scenes &amp; Entities</a><a href="prefabs.html">Prefabs</a><a href="asset-pipeline.html">Asset Pipeline</a><a href="materials-textures.html">Textures &amp; Materials</a><a href="sprites.html">Sprites &amp; Animation</a><a href="audio.html">Audio</a></div><div class="nav-group"><div class="nav-group-title">Gameplay</div><a href="input.html">Input</a><a href="managed-scripting.html">C# Scripting</a><a href="gameplay-api.html">Gameplay API</a><a href="lua-scripting.html">Lua Scripting</a></div><div class="nav-group"><div class="nav-group-title">UI &amp; 2D</div><a href="rmlui.html">RmlUi</a><a href="runtime-ui.html">Runtime UI API</a><a href="two-d-foundation.html">2D / UI Foundation</a></div><div class="nav-group"><div class="nav-group-title">Build &amp; help</div><a href="build-and-ship.html">Build &amp; Ship</a><a href="exporting.html">Exporting Reference</a><a href="troubleshooting.html" aria-current="page">Troubleshooting</a><a href="limitations.html">Current Limitations</a></div><div class="nav-group"><div class="nav-group-title">Advanced</div><a href="scene-format.html">Scene Text Format</a><a href="extensions.html">Editor Extensions</a><a href="automation-mcp.html">Automation / MCP</a></div></nav></div></aside><main class="article-wrap"><article class="article"><div class="doc-breadcrumb"><a href="index.html">Documentation</a><span>›</span>Troubleshooting</div><h1 id="troubleshooting">Troubleshooting</h1>
+<p>Start with the smallest boundary that is failing: source build, project open, editor authoring, C# build, Play Mode, or exported package. Avoid changing multiple systems at once while diagnosing.</p>
+<h2 id="the-engine-will-not-build">The engine will not build</h2>
+<p>Check:</p>
+<ol>
+<li>Visual Studio 2022 or 2026 is installed with C++/CMake tooling.</li>
+<li>CMake is available either on PATH or through Visual Studio.</li>
+<li>You are building x64.</li>
+<li><code>tools/build-managed-editor.ps1</code> exists in the source package.</li>
+<li>If C# is needed, the .NET 8+ SDK is installed.</li>
+</ol>
+<p>Run:</p>
+<pre><code class="language-powershell">Set-ExecutionPolicy -Scope Process Bypass
+.\build.ps1
+</code></pre>
+<p>Read the first real error rather than the final cascade.</p>
+<h2 id="c-scripts-do-not-appear-in-the-inspector">C# scripts do not appear in the Inspector</h2>
+<ul>
+<li>Build C# Scripts.</li>
+<li>Fix any compiler errors.</li>
+<li>Use Refresh C# Metadata.</li>
+<li>Confirm your class is public, derives from <code>Vespera.Component</code>, and is in the project's configured managed assembly.</li>
+<li>Mark fields with <code>[Expose]</code> if you expect them in the Inspector.</li>
+</ul>
+<p>A failed build should preserve the last-good managed output, so the diagnostic text is more useful than repeatedly restarting the editor.</p>
+<h2 id="input-returns-zerofalse">Input returns zero/false</h2>
+<p>Open <strong>Project Settings → Input Actions</strong> and verify the action name exactly matches the string used in code. Check device, code, scale, and deadzone.</p>
+<p>Use <code>Down</code> for held state, <code>Pressed</code> for a one-frame press transition, and <code>Value</code> for axes.</p>
+<h2 id="an-asset-disappeared-after-i-moved-it">An asset disappeared after I moved it</h2>
+<p>If the move happened outside Vespera:</p>
+<ol>
+<li>Refresh Asset Catalog.</li>
+<li>Inspect the asset's <code>.vmeta</code> and catalog identity.</li>
+<li>Check dependent scenes/materials/prefabs/RML.</li>
+<li>Restore the original file plus <code>.vmeta</code> together if identity was accidentally broken.</li>
+</ol>
+<p>Use <strong>Move / Rename…</strong> in the editor for future referenced moves.</p>
+<h2 id="a-standalone-build-is-missing-an-asset">A standalone build is missing an asset</h2>
+<p>The packager follows known dependencies. Content loaded only by a string from gameplay code may not be discoverable automatically.</p>
+<p>Add the content as an explicit build include, rebuild, then inspect <code>Vespera.PackageManifest.txt</code> and <code>Vespera.PackageReport.txt</code>.</p>
+<h2 id="rmlui-element-lookup-returns-null">RmlUi element lookup returns null</h2>
+<ul>
+<li>Verify the startup RML document is configured.</li>
+<li>Verify the element has the exact <code>id</code> you pass to <code>UI.Find</code>.</li>
+<li>Confirm the UI is active in the current scene/runtime state.</li>
+<li>Use <code>UI.FindRequired</code> while debugging a mandatory element to get a direct failure instead of silently continuing.</li>
+</ul>
+<h2 id="exported-c-game-will-not-start-on-another-pc">Exported C# game will not start on another PC</h2>
+<p>If using framework-dependent deployment, install a compatible .NET runtime on that machine or switch the project to <strong>Portable (.NET bundled)</strong> and rebuild.</p>
+<h2 id="the-editor-project-state-looks-corrupted">The editor project state looks corrupted</h2>
+<p>Do not hand-edit the scene until you have a copy. Save backups first. Run the editor's scene validation and project/integrity checks available to your workflow. For reproducible engine bugs, preserve the smallest project that demonstrates the failure.</p>
+</article></main><aside class="right-rail"><div class="toc"><div class="toc-title">On this page</div><a class="h2" href="#the-engine-will-not-build">The engine will not build</a><a class="h2" href="#c-scripts-do-not-appear-in-the-inspector">C# scripts do not appear in the Inspector</a><a class="h2" href="#input-returns-zerofalse">Input returns zero/false</a><a class="h2" href="#an-asset-disappeared-after-i-moved-it">An asset disappeared after I moved it</a><a class="h2" href="#a-standalone-build-is-missing-an-asset">A standalone build is missing an asset</a><a class="h2" href="#rmlui-element-lookup-returns-null">RmlUi element lookup returns null</a><a class="h2" href="#exported-c-game-will-not-start-on-another-pc">Exported C# game will not start on another PC</a><a class="h2" href="#the-editor-project-state-looks-corrupted">The editor project state looks corrupted</a></div></aside></div><footer class="site-footer"><span>Vespera Engine documentation</span><span>MIT License · Timingplanet</span></footer><div class="search-modal" data-search-modal hidden><div class="search-panel" role="dialog" aria-modal="true"><div class="search-row"><input data-search-input type="search" placeholder="Search Vespera documentation…" autocomplete="off"><button data-search-close>Close</button></div><div class="search-results" data-search-results></div></div></div><script src="search-index.js"></script><script src="site.js"></script></body></html>

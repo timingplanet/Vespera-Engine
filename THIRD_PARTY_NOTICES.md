@@ -10,6 +10,7 @@ included in the downloaded upstream source packages.
 | Dependency | Version / pin | License | Use |
 | --- | --- | --- | --- |
 | SDL | 3.4.14 | zlib License | platform, input, windows, audio foundation |
+| Vulkan-Headers | 1.4.357 | Apache-2.0 OR MIT | Vulkan API declarations for the optional Vulkan renderer |
 | Lua | 5.4.9 | MIT License | optional project-level Lua runtime |
 | RmlUi | 6.2 | MIT License | production runtime UI |
 | FreeType | 2.14.1 | FreeType License (with upstream alternative terms) | font rendering for RmlUi |

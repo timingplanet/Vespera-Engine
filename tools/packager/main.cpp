@@ -1,5 +1,6 @@
 #include <vespera/assets/asset_catalog.hpp>
 #include <vespera/assets/project_package.hpp>
+#include <vespera/core/version.hpp>
 #include <vespera/project/project.hpp>
 
 #include <filesystem>
@@ -44,6 +45,10 @@ int main(int argc, char** argv) {
         std::string value;
         if (arg == "--help" || arg == "-h") {
             print_usage();
+            return 0;
+        }
+        if (arg == "--version") {
+            std::cout << "Vespera Packager " << vespera::kEngineVersion << "\n";
             return 0;
         }
         if (arg == "--project") {

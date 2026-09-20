@@ -65,9 +65,12 @@ bool PlayRuntime::initialize_managed(vespera::Scene& scene) {
         return false;
     }
 
-    managed_config_.runtime_config = "managed/Vespera.Managed.runtimeconfig.json";
-    managed_config_.bridge_assembly = "managed/Vespera.NET.dll";
-    managed_config_.game_assembly = std::filesystem::path("managed") / (project_->managed_assembly + ".dll");
+    const std::filesystem::path managed_root = managed_directory_.empty()
+        ? std::filesystem::path("managed")
+        : managed_directory_;
+    managed_config_.runtime_config = managed_root / "Vespera.Managed.runtimeconfig.json";
+    managed_config_.bridge_assembly = managed_root / "Vespera.NET.dll";
+    managed_config_.game_assembly = managed_root / (project_->managed_assembly + ".dll");
     managed_config_.auto_reload = true;
 
     if (!managed_.initialize(scene, input_, audio_, *assets_, managed_config_, ui_surface_, performance_)) {
@@ -133,6 +136,7 @@ bool PlayRuntime::start(
     const vespera::VesperaProject& project,
     vespera::AssetCatalog& assets,
     const std::filesystem::path& scene_path,
+    const std::filesystem::path& managed_directory,
     vespera::UiDocument* ui_document,
     vespera::RmlUiSurface* rml_ui_surface,
     vespera::RuntimePerformanceCounters* performance) {
@@ -152,6 +156,7 @@ bool PlayRuntime::start(
         ui_surface_ = &*legacy_ui_surface_;
     }
     current_scene_path_ = scene_path;
+    managed_directory_ = managed_directory.lexically_normal();
     configure_input_map();
     trigger_tracker_.reset();
     create_player_proxy(scene);
@@ -161,10 +166,10 @@ bool PlayRuntime::start(
     status_.audio_ready = audio_.initialize();
     initialize_scripts(scene);
     if (status_.message.empty()) {
-        if (status_.managed_ready && status_.lua_ready) status_.message = std::format("embedded runtime online: {} C# component(s) + Lua", status_.managed_script_count);
-        else if (status_.managed_ready) status_.message = std::format("embedded runtime online: {} C# component(s)", status_.managed_script_count);
-        else if (status_.lua_ready) status_.message = "embedded runtime online: Lua";
-        else status_.message = "embedded native play runtime online";
+        if (status_.managed_ready && status_.lua_ready) status_.message = std::format("Play Mode ready: {} C# component(s) + Lua", status_.managed_script_count);
+        else if (status_.managed_ready) status_.message = std::format("Play Mode ready: {} C# component(s)", status_.managed_script_count);
+        else if (status_.lua_ready) status_.message = "Play Mode ready: Lua";
+        else status_.message = "Play Mode ready";
     }
     return true;
 }
@@ -183,6 +188,7 @@ void PlayRuntime::stop() {
     legacy_ui_surface_.reset();
     ui_runtime_state_ = {};
     current_scene_path_.clear();
+    managed_directory_.clear();
     player_proxy_id_ = vespera::kInvalidSceneObjectId;
     current_sector_ = 0;
     status_ = {};

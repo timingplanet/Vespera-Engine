@@ -1,5 +1,7 @@
 param(
     [string]$Project,
+    [ValidateSet("Debug", "Release")]
+    [string]$Configuration = "Debug",
     [string]$OutputDir,
     [string]$EditorManagedDir,
     [string]$RuntimeManagedDir,
@@ -15,8 +17,8 @@ if (-not $Project) { $Project = Join-Path $Root "examples\reference_game\managed
 if (-not $GameAssemblyName) { $GameAssemblyName = [System.IO.Path]::GetFileNameWithoutExtension($Project) }
 if (-not $OutputDir) { $OutputDir = Join-Path $Root "build\managed\reference_game" }
 if (-not $NoMirrors) {
-    if (-not $EditorManagedDir) { $EditorManagedDir = Join-Path $Root "build\editor\Debug\managed" }
-    if (-not $RuntimeManagedDir) { $RuntimeManagedDir = Join-Path $Root "build\examples\reference_game\Debug\managed" }
+    if (-not $EditorManagedDir) { $EditorManagedDir = Join-Path $Root "build\editor\$Configuration\managed" }
+    if (-not $RuntimeManagedDir) { $RuntimeManagedDir = Join-Path $Root "build\examples\reference_game\$Configuration\managed" }
 } else {
     $EditorManagedDir = ""
     $RuntimeManagedDir = ""
@@ -140,7 +142,7 @@ New-Item -ItemType Directory -Force -Path $Stage | Out-Null
 
 $VesperaSdkProject = Join-Path $Root "managed\Vespera.NET\Vespera.NET.csproj"
 $VesperaSdkArgument = "-p:VesperaSdkProject=$VesperaSdkProject"
-$BuildLines = @(& $Dotnet build $Project -c Debug -p:VesperaTargetFramework=$Tfm $VesperaSdkArgument -o $Stage --nologo -v:minimal 2>&1 | ForEach-Object { $_.ToString() })
+$BuildLines = @(& $Dotnet build $Project -c $Configuration -p:VesperaTargetFramework=$Tfm $VesperaSdkArgument -o $Stage --nologo -v:minimal 2>&1 | ForEach-Object { $_.ToString() })
 $BuildExit = $LASTEXITCODE
 if ($BuildExit -ne 0) {
     Write-Diagnostics "failed" $BuildLines $Tfm
@@ -161,7 +163,7 @@ foreach ($Required in @("Vespera.NET.dll", $GameAssemblyFile)) {
 }
 
 New-Item -ItemType Directory -Force -Path $ToolStage | Out-Null
-$ToolLines = @(& $Dotnet build (Join-Path $Root "managed\Vespera.ScriptTool\Vespera.ScriptTool.csproj") -c Debug -p:VesperaTargetFramework=$Tfm -o $ToolStage --nologo -v:minimal 2>&1 | ForEach-Object { $_.ToString() })
+$ToolLines = @(& $Dotnet build (Join-Path $Root "managed\Vespera.ScriptTool\Vespera.ScriptTool.csproj") -c $Configuration -p:VesperaTargetFramework=$Tfm -o $ToolStage --nologo -v:minimal 2>&1 | ForEach-Object { $_.ToString() })
 $ToolExit = $LASTEXITCODE
 $BuildLines += $ToolLines
 if ($ToolExit -ne 0) {

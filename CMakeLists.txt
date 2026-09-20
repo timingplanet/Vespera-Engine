@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.25)
 
-project(VesperaEngine VERSION 1.0.0 LANGUAGES C CXX)
+project(VesperaEngine VERSION 1.1.0 LANGUAGES C CXX)
 
 if(WIN32)
     enable_language(RC)
@@ -13,7 +13,7 @@ if(WIN32)
 endif()
 
 # Human-visible build label used by the editor/runtime/MCP surface.
-set(VESPERA_VERSION_LABEL "1.0.0")
+set(VESPERA_VERSION_LABEL "1.1.0")
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -43,6 +43,10 @@ option(VESPERA_BUILD_EXAMPLES "Build Vespera example projects" ON)
 option(VESPERA_BUILD_EDITOR "Build the Vespera editor" ON)
 option(VESPERA_BUILD_TOOLS "Build Vespera developer/package tools" ON)
 option(VESPERA_WARNINGS_AS_ERRORS "Treat Vespera warnings as errors" OFF)
+option(VESPERA_STATIC_MSVC_RUNTIME "Link the MSVC runtime statically for portable Windows distributions" OFF)
+if(MSVC AND VESPERA_STATIC_MSVC_RUNTIME)
+    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>" CACHE STRING "" FORCE)
+endif()
 
 foreach(_legacy_pair
     "SECTORLINE_BUILD_EXAMPLES;VESPERA_BUILD_EXAMPLES;${_VESPERA_LEGACY_BUILD_EXAMPLES}"
@@ -62,6 +66,7 @@ option(VESPERA_TESTS_ONLY "Configure only the lightweight Vespera behavioral tes
 option(VESPERA_RMLUI_UI "Build the RmlUi-backed Vespera production UI foundation" ON)
 option(VESPERA_RMLUI_EVALUATION "Deprecated alias for VESPERA_RMLUI_UI" OFF)
 option(VESPERA_LUA_SCRIPTING "Build the lightweight Vespera Lua 5.4 runtime scripting host" ON)
+option(VESPERA_VULKAN_RENDERER "Build the Vulkan renderer backend" ON)
 if(VESPERA_RMLUI_EVALUATION)
     set(VESPERA_RMLUI_UI ON CACHE BOOL "Build the RmlUi-backed Vespera production UI foundation" FORCE)
 endif()
@@ -97,6 +102,19 @@ FetchContent_Declare(
     DOWNLOAD_EXTRACT_TIMESTAMP TRUE
 )
 FetchContent_MakeAvailable(SDL3)
+
+# Vulkan is loaded dynamically through SDL, so Vespera only needs the Khronos
+# headers at build time. Keeping the loader dynamic avoids requiring a Vulkan
+# SDK install on developer machines while still using the platform loader at
+# runtime.
+if(VESPERA_VULKAN_RENDERER)
+    FetchContent_Declare(
+        vulkan_headers
+        URL https://github.com/KhronosGroup/Vulkan-Headers/archive/refs/tags/v1.4.357.tar.gz
+        DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+    )
+    FetchContent_MakeAvailable(vulkan_headers)
+endif()
 
 # Lightweight runtime/mod scripting. Lua 5.4.9 is the final 5.4 maintenance
 # release and keeps Vespera on the mature 5.4 embedding API while C# remains
@@ -145,15 +163,14 @@ if(VESPERA_LUA_SCRIPTING)
         ${lua_source_SOURCE_DIR}/src/lzio.c
     )
     target_include_directories(vespera_lua PUBLIC ${lua_source_SOURCE_DIR}/src)
-    target_compile_definitions(vespera_lua PRIVATE $<$<PLATFORM_ID:Windows>:LUA_USE_WINDOWS>)
     if(UNIX AND NOT APPLE)
         target_compile_definitions(vespera_lua PRIVATE LUA_USE_LINUX)
         target_link_libraries(vespera_lua PRIVATE ${CMAKE_DL_LIBS} m)
     endif()
 endif()
 
-# 0.9.8 production RmlUi foundation. The legacy .slui renderer remains available
-# for compatibility/QA while new Vespera-facing UI work is built on pinned RmlUi + FreeType.
+# Production RmlUi foundation. The legacy .slui renderer remains available
+# for compatibility/QA while Vespera-facing UI uses pinned RmlUi + FreeType.
 if(VESPERA_RMLUI_UI)
     set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
     set(FT_DISABLE_ZLIB ON CACHE BOOL "" FORCE)
@@ -199,6 +216,7 @@ add_subdirectory(runtime/player)
 
 if(VESPERA_BUILD_TOOLS)
     add_subdirectory(tools/packager)
+    add_subdirectory(tools/builder)
 endif()
 
 if(VESPERA_BUILD_EXAMPLES)

@@ -1,0 +1,46 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="PowerShell export examples and packaging behavior for source-tree automation."><title>Exporting Reference — Vespera Engine Docs</title><link rel="icon" href="assets/vespera_icon.png"><link rel="stylesheet" href="styles.css"></head><body><header class="topbar"><a class="brand" href="index.html"><img src="assets/vespera_icon.png" alt=""><span>Vespera Engine</span><b>Docs</b></a><button class="search-button" type="button" data-search-open><span>Search docs</span><kbd>Ctrl K</kbd></button></header><div class="wiki-layout"><aside class="left-rail"><div class="rail-scroll"><nav class="doc-nav" aria-label="Documentation"><div class="nav-group"><div class="nav-group-title">Start here</div><a href="index.html">Documentation Home</a><a href="getting-started.html">Getting Started</a><a href="first-game.html">Your First Game</a><a href="project-structure.html">Project Structure</a><a href="file-types.html">File Types</a><a href="editor.html">Editor Guide</a></div><div class="nav-group"><div class="nav-group-title">World &amp; content</div><a href="scenes-entities.html">Scenes &amp; Entities</a><a href="prefabs.html">Prefabs</a><a href="asset-pipeline.html">Asset Pipeline</a><a href="materials-textures.html">Textures &amp; Materials</a><a href="sprites.html">Sprites &amp; Animation</a><a href="audio.html">Audio</a></div><div class="nav-group"><div class="nav-group-title">Gameplay</div><a href="input.html">Input</a><a href="managed-scripting.html">C# Scripting</a><a href="gameplay-api.html">Gameplay API</a><a href="lua-scripting.html">Lua Scripting</a></div><div class="nav-group"><div class="nav-group-title">UI &amp; 2D</div><a href="rmlui.html">RmlUi</a><a href="runtime-ui.html">Runtime UI API</a><a href="two-d-foundation.html">2D / UI Foundation</a></div><div class="nav-group"><div class="nav-group-title">Build &amp; help</div><a href="build-and-ship.html">Build &amp; Ship</a><a href="exporting.html" aria-current="page">Exporting Reference</a><a href="troubleshooting.html">Troubleshooting</a><a href="limitations.html">Current Limitations</a></div><div class="nav-group"><div class="nav-group-title">Advanced</div><a href="scene-format.html">Scene Text Format</a><a href="extensions.html">Editor Extensions</a><a href="automation-mcp.html">Automation / MCP</a></div></nav></div></aside><main class="article-wrap"><article class="article"><div class="doc-breadcrumb"><a href="index.html">Documentation</a><span>›</span>Exporting Reference</div><h1 id="exporting-reference">Exporting Reference</h1>
+<p>The editor's <strong>Build Game</strong> window is the normal path. The source tree also includes <code>export.ps1</code> for automation, CI-like checks, and command-line packaging.</p>
+<h2 id="basic-export">Basic export</h2>
+<pre><code class="language-powershell">.\export.ps1 -Project C:\Games\MyGame\MyGame.vesperaproject
+</code></pre>
+<p>If the project does not declare a custom native game target, export uses the shared <code>vespera_player</code> runtime.</p>
+<h2 id="configurations">Configurations</h2>
+<p>The export script maps game configurations to native build configurations:</p>
+<table>
+<thead>
+<tr>
+<th>Game configuration</th>
+<th>Native configuration</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Debug</td>
+<td>Debug</td>
+</tr>
+<tr>
+<td>Development</td>
+<td>RelWithDebInfo</td>
+</tr>
+<tr>
+<td>Release</td>
+<td>Release</td>
+</tr>
+</tbody>
+</table>
+<p>Development can include debug symbols when project diagnostics are enabled.</p>
+<h2 id="managed-deployment">Managed deployment</h2>
+<p>By default, export follows the project's <code>managed_deployment</code> setting. The project can choose framework-dependent or portable deployment.</p>
+<p>The export path builds the configured managed project into a project-specific staging directory before packaging, protecting against accidentally reusing a stale assembly from a different project.</p>
+<h2 id="output-folder">Output folder</h2>
+<p>If no output is supplied, Vespera uses the project's configured build output directory and names the package from the project and configuration.</p>
+<p>The package includes:</p>
+<pre><code class="language-text">Vespera.PackageManifest.txt
+Vespera.PackageReport.txt
+</code></pre>
+<p>Use these when investigating what was included or why a dependency was omitted.</p>
+<h2 id="launch-after-export">Launch after export</h2>
+<p>The script can launch a successful package when requested. The runtime is started with the package folder as its working directory.</p>
+<h2 id="avoid-nobuild-until-you-understand-the-state">Avoid <code>-NoBuild</code> until you understand the state</h2>
+<p>Skipping build work is useful for controlled automation when you know the expected native and managed outputs already exist. For ordinary shipping, let Vespera build the required targets so you do not package stale binaries.</p>
+</article></main><aside class="right-rail"><div class="toc"><div class="toc-title">On this page</div><a class="h2" href="#basic-export">Basic export</a><a class="h2" href="#configurations">Configurations</a><a class="h2" href="#managed-deployment">Managed deployment</a><a class="h2" href="#output-folder">Output folder</a><a class="h2" href="#launch-after-export">Launch after export</a><a class="h2" href="#avoid-nobuild-until-you-understand-the-state">Avoid -NoBuild until you understand the state</a></div></aside></div><footer class="site-footer"><span>Vespera Engine documentation</span><span>MIT License · Timingplanet</span></footer><div class="search-modal" data-search-modal hidden><div class="search-panel" role="dialog" aria-modal="true"><div class="search-row"><input data-search-input type="search" placeholder="Search Vespera documentation…" autocomplete="off"><button data-search-close>Close</button></div><div class="search-results" data-search-results></div></div></div><script src="search-index.js"></script><script src="site.js"></script></body></html>

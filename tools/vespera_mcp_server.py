@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Vespera MCP developer bridge (1.0.0 Editor Play RmlUi bridge).
+"""Vespera MCP developer bridge (1.1.0).
 
 This process speaks MCP JSON-RPC over stdio and forwards validated tool calls to
 an already-running Vespera Editor through the localhost-only VAP v1 transport.
@@ -19,7 +19,7 @@ import urllib.parse
 from typing import Any
 
 SERVER_NAME = "vespera-editor"
-SERVER_VERSION = "1.0.0"
+SERVER_VERSION = "1.1.0"
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 46787
 DEFAULT_RUNTIME_PORT = 46788
@@ -180,7 +180,7 @@ class EditorClient:
 class OperationRegistry:
     """Small in-process registry for long editor commands that outlive one MCP call.
 
-    Agent/desktop clients can impose a shorter tool-call deadline than a normal
+    Some MCP clients can impose a shorter tool-call deadline than a normal
     managed compilation. Starting the editor request on a background thread and
     polling a local operation avoids reporting a false transport timeout while
     preserving the editor's existing synchronous/main-thread command semantics.
@@ -303,7 +303,7 @@ def main() -> int:
                 "capabilities": {"tools": {"listChanged": False}},
                 "serverInfo": {"name": SERVER_NAME, "version": SERVER_VERSION},
                 "instructions": (
-                    "Vespera 0.9.8 developer-preview tools route through localhost-only editor/runtime "
+                    "Vespera 1.1 developer-preview tools route through localhost-only editor/runtime "
                     "automation. Start every QA session with vespera_get_bridge_info and compare bridge/editor versions "
                     "before mutation. Use IDs returned by vespera_list_entities."
                 ),

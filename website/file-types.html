@@ -1,0 +1,118 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="A current reference for Vespera project, scene, prefab, asset, UI, script, and generated package files."><title>File Types — Vespera Engine Docs</title><link rel="icon" href="assets/vespera_icon.png"><link rel="stylesheet" href="styles.css"></head><body><header class="topbar"><a class="brand" href="index.html"><img src="assets/vespera_icon.png" alt=""><span>Vespera Engine</span><b>Docs</b></a><button class="search-button" type="button" data-search-open><span>Search docs</span><kbd>Ctrl K</kbd></button></header><div class="wiki-layout"><aside class="left-rail"><div class="rail-scroll"><nav class="doc-nav" aria-label="Documentation"><div class="nav-group"><div class="nav-group-title">Start here</div><a href="index.html">Documentation Home</a><a href="getting-started.html">Getting Started</a><a href="first-game.html">Your First Game</a><a href="project-structure.html">Project Structure</a><a href="file-types.html" aria-current="page">File Types</a><a href="editor.html">Editor Guide</a></div><div class="nav-group"><div class="nav-group-title">World &amp; content</div><a href="scenes-entities.html">Scenes &amp; Entities</a><a href="prefabs.html">Prefabs</a><a href="asset-pipeline.html">Asset Pipeline</a><a href="materials-textures.html">Textures &amp; Materials</a><a href="sprites.html">Sprites &amp; Animation</a><a href="audio.html">Audio</a></div><div class="nav-group"><div class="nav-group-title">Gameplay</div><a href="input.html">Input</a><a href="managed-scripting.html">C# Scripting</a><a href="gameplay-api.html">Gameplay API</a><a href="lua-scripting.html">Lua Scripting</a></div><div class="nav-group"><div class="nav-group-title">UI &amp; 2D</div><a href="rmlui.html">RmlUi</a><a href="runtime-ui.html">Runtime UI API</a><a href="two-d-foundation.html">2D / UI Foundation</a></div><div class="nav-group"><div class="nav-group-title">Build &amp; help</div><a href="build-and-ship.html">Build &amp; Ship</a><a href="exporting.html">Exporting Reference</a><a href="troubleshooting.html">Troubleshooting</a><a href="limitations.html">Current Limitations</a></div><div class="nav-group"><div class="nav-group-title">Advanced</div><a href="scene-format.html">Scene Text Format</a><a href="extensions.html">Editor Extensions</a><a href="automation-mcp.html">Automation / MCP</a></div></nav></div></aside><main class="article-wrap"><article class="article"><div class="doc-breadcrumb"><a href="index.html">Documentation</a><span>›</span>File Types</div><h1 id="file-types">File Types</h1>
+<p>This page is a practical map of the files you will encounter while using Vespera.</p>
+<h2 id="project-and-world-files">Project and world files</h2>
+<table>
+<thead>
+<tr>
+<th>Extension</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>.vesperaproject</code></td>
+<td>Project-wide settings, startup assets, input bindings, scripting/build configuration.</td>
+</tr>
+<tr>
+<td><code>.slscene</code></td>
+<td>Scene Text file containing world/sector data, entities, components, script attachments, and scene resources.</td>
+</tr>
+<tr>
+<td><code>.slprefab</code></td>
+<td>Reusable entity prefab. Instances receive fresh scene entity IDs.</td>
+</tr>
+<tr>
+<td><code>.vmeta</code></td>
+<td>Asset metadata sidecar containing the stable asset ID and importer settings.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="content-assets">Content assets</h2>
+<table>
+<thead>
+<tr>
+<th>Extension</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>.slmat</code></td>
+<td>Material asset. Can reference a base texture by stable asset identity.</td>
+</tr>
+<tr>
+<td><code>.slspriteclip</code></td>
+<td>Sprite animation clip.</td>
+</tr>
+<tr>
+<td><code>.slspritesheet</code></td>
+<td>Sprite-sheet descriptor pointing at a source texture.</td>
+</tr>
+<tr>
+<td><code>.slaudio</code></td>
+<td>Audio-clip descriptor. The current clip importer resolves a WAV source asset.</td>
+</tr>
+<tr>
+<td><code>.png</code>, <code>.jpg</code>, <code>.jpeg</code>, <code>.bmp</code>, <code>.tga</code></td>
+<td>Texture sources recognized by the asset catalog.</td>
+</tr>
+<tr>
+<td><code>.wav</code>, <code>.ogg</code>, <code>.mp3</code></td>
+<td>Audio sources recognized by the asset catalog. Direct engine audio playback support depends on the runtime path you use; <code>.slaudio</code> currently resolves WAV sources.</td>
+</tr>
+<tr>
+<td><code>.ttf</code>, <code>.otf</code></td>
+<td>Font sources.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="ui-files">UI files</h2>
+<table>
+<thead>
+<tr>
+<th>Extension</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>.rml</code></td>
+<td>RmlUi document for production runtime UI.</td>
+</tr>
+<tr>
+<td><code>.rcss</code></td>
+<td>RmlUi style sheet.</td>
+</tr>
+<tr>
+<td><code>.slui</code></td>
+<td>Legacy Vespera UI document. Kept for compatibility and tooling; RmlUi is the production UI path.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="gameplay-code">Gameplay code</h2>
+<table>
+<thead>
+<tr>
+<th>Extension</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>.cs</code></td>
+<td>Project-owned C# gameplay code using <code>Vespera.NET</code>.</td>
+</tr>
+<tr>
+<td><code>.csproj</code></td>
+<td>Managed project built into the game's configured assembly.</td>
+</tr>
+<tr>
+<td><code>.lua</code></td>
+<td>Optional project-level Lua entry script.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="generated-package-files">Generated package files</h2>
+<p>A standalone export writes a package manifest and package report beside the built game. These files describe what Vespera packaged and are useful when diagnosing missing assets or deployment problems.</p>
+<div class="notice"><strong>Stable identity matters:</strong> when moving assets, use the editor's <strong>Move / Rename…</strong> workflow where possible. It can preserve stable IDs and repair references that would otherwise become stale.</div>
+</article></main><aside class="right-rail"><div class="toc"><div class="toc-title">On this page</div><a class="h2" href="#project-and-world-files">Project and world files</a><a class="h2" href="#content-assets">Content assets</a><a class="h2" href="#ui-files">UI files</a><a class="h2" href="#gameplay-code">Gameplay code</a><a class="h2" href="#generated-package-files">Generated package files</a></div></aside></div><footer class="site-footer"><span>Vespera Engine documentation</span><span>MIT License · Timingplanet</span></footer><div class="search-modal" data-search-modal hidden><div class="search-panel" role="dialog" aria-modal="true"><div class="search-row"><input data-search-input type="search" placeholder="Search Vespera documentation…" autocomplete="off"><button data-search-close>Close</button></div><div class="search-results" data-search-results></div></div></div><script src="search-index.js"></script><script src="site.js"></script></body></html>

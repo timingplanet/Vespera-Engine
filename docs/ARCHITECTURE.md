@@ -1,58 +1,52 @@
 # Vespera Engine architecture notes
 
-## Core principles
+## Current architecture at 1.1
 
-1. **The showcase game is a first-class consumer of the public engine API.** It must not reach into engine internals to get normal game work done.
-2. **Modern renderer, constrained world model.** Sector authoring is a strength, not a nostalgic implementation constraint.
-3. **Sprite-first, not sprite-only.** 3D meshes may exist, but a complete game must be possible without bespoke 3D character models.
-4. **Simple things should be obvious; advanced things may be advanced.** The target learning curve is a professional engine such as Unity, not a no-code level maker.
-5. **One command model later.** Editor undo/redo, scripting/editor automation, and MCP should eventually sit on the same structured command layer.
-6. **Visual scripting is post-1.0.** When added, it should expose the same gameplay API as Lua rather than inventing a second engine.
-7. **Vendor graphics features are plugins/options, not engine identity.** Hardware RT is renderer-level; DLSS/FSR are optional upscaler integrations.
-8. **No game-specific systems in engine core unless multiple games/examples prove they are generally useful.**
+Vespera is a C++20 engine/editor with renderer-neutral scene/gameplay systems, project-owned C# as the primary full-game scripting layer, optional project-level Lua, RmlUi runtime UI, stable asset identities, and a shared standalone player/export path.
+
+The public architecture is organized around a few durable boundaries:
+
+1. **Game/editor systems do not own graphics APIs.** Scene, entity/component, asset, scripting, UI packet, collision/query, project, and package logic remain outside D3D12/Vulkan backend implementation details.
+2. **Renderer backends are siblings.** Windows defaults to D3D12. Vulkan implements the same `RenderBackend` contract and is also the native portability path used by Linux work. Backend-specific editor hosting is intentionally isolated behind sibling D3D12/Vulkan host integrations.
+3. **The editor mutates semantic state.** Undo/redo, validation, stable IDs, asset repair, Play/Edit separation, extension registration, automation, and MCP operate through supported editor/project concepts rather than raw engine pointers.
+4. **Scripting has one gameplay model.** Native C++, C#, Lua, documentation, automation, and future visual scripting should describe the same Entity/Transform/component/project concepts instead of independent incompatible APIs.
+5. **Serialized compatibility is deliberate.** Legacy `sectorline.*` component keys, scene headers, and compatibility includes/targets remain where they are part of persistent formats or supported source compatibility. Branding cleanup must not silently break old content.
+6. **Distributions are products, not source-tree copies.** Builder/runtime/.NET discovery is installation-aware, writable state belongs to project/user locations, and release tooling validates staged public trees and assembled packages.
+7. **Examples dogfood public workflows.** Reference/QA projects may be adversarial, but ordinary showcase/starter projects should use the same public APIs, editor workflows, Build Game path, and packaging behavior expected of users.
 
 ## Renderer strategy
 
-SDL3 owns window creation, events, input, and platform plumbing. Vespera owns graphics.
+SDL3 owns window creation, events, input, and platform plumbing. Vespera owns graphics through the renderer-neutral `RenderBackend` interface.
 
-The renderer is abstracted behind `RenderBackend`. D3D12 is the first real backend. Vulkan is planned only after the renderer interface has survived real world rendering work.
+- **Direct3D 12** is the production-supported Windows backend and automatic Windows default.
+- **Vulkan** is the preview portability backend used for Windows parity testing and experimental Linux support. It already covers sector geometry, materials/textures, primitive entities, sprites, point lighting, runtime UI, depth, presentation, and editor Scene/Game integration.
+- **Null rendering** remains useful for non-GPU/tooling paths.
 
-Future renderer capabilities should include:
+Backend-specific native access must stay narrow and tooling-oriented. New gameplay/scene features should first define renderer-neutral inputs and then be consumed by each backend. Vendor features such as ray tracing or upscalers remain optional renderer capabilities rather than engine identity.
 
-- raster feature level
-- hardware ray tracing support
-- HDR support
-- async compute support
-- mesh-shader support (optional)
-- upscaler plugin support
+## World and entity strategy
 
-Do not design the runtime around any single vendor feature.
+The runtime uses a scene/entity/component model alongside authored 2.5D sector geometry. Sector data is a native engine world primitive; renderer-independent meshing/query logic produces the data consumed by graphics backends. Entities own stable identity and Transform plus optional built-in/managed behavior. Prefabs, stable asset references, validation, collision/trigger helpers, scripting, and editor authoring build on those same concepts.
 
-## World strategy (planned)
+Vespera intentionally does not force every game into a generic ECS or a full rigid-body physics engine. Add reusable engine systems only when multiple real projects/examples justify them.
 
-Vespera's scene system should eventually distinguish:
+## Scripting and API strategy
 
-- scene/entity/component objects
-- authored 2.5D sector geometry
-- generated render geometry
+The native core remains C++20. C# is the primary full-game managed layer, Lua is the lightweight project-level runtime/mod layer, and future visual scripting should sit over the same semantic gameplay API. API metadata should have one source of truth wherever practical so Inspector exposure, C#, Lua, documentation, MCP, and future visual nodes do not drift apart.
 
-A sector is a native engine primitive, not a separate 'level maker' file format bolted onto the side.
+## Editor, automation, and MCP strategy
 
-## AI / MCP strategy (planned)
+The editor is a professional authoring application built from explicit subsystems rather than one monolithic source file. Scene/Hierarchy/Inspector/Project/Build/Play/automation responsibilities should remain isolated enough to test and evolve independently.
 
-MCP is not an AI generator inside the renderer. The editor should eventually expose a structured command API. MCP can securely expose selected commands such as:
+Local automation is opt-in and localhost-only. MCP and direct automation expose semantic operations such as project inspection, entity/component mutation, prefab/assets/UI authoring, managed source/build operations, Play Mode, validation, and export. Mutations must preserve validation, undo/redo expectations, stable identities, project scope, and useful errors rather than bypassing those systems.
 
-- inspect scene / selection
-- create/delete/duplicate entity
-- add/remove component
-- get/set serialized property
-- import asset
-- create material/prefab
-- open/save scene
-- run/stop game
-- read build/runtime diagnostics
+## Historical implementation notes
 
-Writes should be project-scoped, permissioned, logged, and undoable as transactions.
+The remainder of this document records why important boundaries were introduced. These notes are historical context, not a statement that old milestone limitations still describe the current engine.
+
+## Historical architecture notes
+
+The sections below preserve the engine's architecture decisions as they were introduced. Version-specific future-tense statements describe the plan at that historical checkpoint; use the current architecture summary above and the roadmap for present-day status.
 
 ## 0.0.2 renderer bring-up note
 
@@ -78,7 +72,7 @@ Sector meshing is renderer-independent. `build_sector_mesh()` lives in the world
 
 The initial sector representation deliberately supports convex X/Z polygons, independent floor/ceiling heights, material references, and per-edge side metadata. `adjacent_sector` is reserved for portal connectivity. 0.1.0 recognizes a portal-designated edge during meshing by leaving it open, but full portal wall-band generation, sector crossing, and height transition collision belong to the next world iteration.
 
-The first-person controller in the reference game is intentionally game-side code using public engine input/world APIs. This is an early dogfooding rule: reusable input and collision primitives may live in engine core, but a specific FPS controller should not silently become mandatory engine behavior.
+The first-person controller in the reference game is intentionally game-side code using public engine input/world APIs. This is an early design rule: reusable input and collision primitives may live in engine core, but a specific FPS controller should not silently become mandatory engine behavior.
 
 
 ## 0.1.1 connected-sector note
@@ -106,7 +100,7 @@ The reference game now loads its actual connected world from `assets/scenes/conn
 
 0.1.4 separates physical device state from game-facing control names. SDL3 scancodes and gamepad handles remain inside `Application`; game code sees Vespera `Key`, `GamepadButton`, `GamepadAxis`, and named `InputMap` actions. A single action can combine digital and analog bindings with scaling and per-axis deadzones.
 
-The reference first-person controller now dogfoods this API: WASD and the left stick feed the same movement actions, while Left Shift and L3 feed the same sprint action. Right-stick look is action-mapped; high-resolution mouse look remains raw frame delta because mouse motion and normalized stick axes have intentionally different semantics.
+The reference first-person controller now exercises this API: WASD and the left stick feed the same movement actions, while Left Shift and L3 feed the same sprint action. Right-stick look is action-mapped; high-resolution mouse look remains raw frame delta because mouse motion and normalized stick axes have intentionally different semantics.
 
 This is a foundation, not the final settings UX. Serialized project bindings, user rebinding UI, Lua exposure, and editor Input settings should build on the same action API later rather than teaching game code about SDL. The runtime currently owns one active gamepad; multi-player device assignment should wait for a game that requires it.
 
@@ -224,7 +218,7 @@ The native/managed boundary is a versioned C ABI table rather than exported C++ 
 
 `Vespera.Managed.EntryPoint.Dispatch` is deliberately one unmanaged-callable dispatcher for the first host. The reference game assembly is loaded into the same `AssemblyLoadContext` as `Vespera.NET`, preserving `Vespera.Component` type identity. Hot reload should later introduce a deliberately collectible game-code context; it must not try to unload CoreCLR itself.
 
-The reference `ManagedSpinner` is a dogfood test of the actual architecture rather than a scripting-only demo: C# changes the same native Transform read by directional sprite rendering. As more APIs are bound, they should wrap the existing semantic Entity/query/input/trigger APIs instead of creating managed-only gameplay systems.
+The reference `ManagedSpinner` is a reference test of the actual architecture rather than a scripting-only demo: C# changes the same native Transform read by directional sprite rendering. As more APIs are bound, they should wrap the existing semantic Entity/query/input/trigger APIs instead of creating managed-only gameplay systems.
 
 
 ## 0.5.2 managed workflow/lifetime boundary note

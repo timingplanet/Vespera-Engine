@@ -1,27 +1,36 @@
-# Editor extensions — 0.8.10 foundation
+# Editor Extensions
 
-`editor/extension_api.hpp` establishes **Editor Extension API v1** as the host-side registration contract.
+Vespera has a host-side extension registration API built around **semantic editor commands and capabilities**.
 
-The initial rule is the same one used for MCP: extensions register semantic commands/capabilities and do not receive privileged access to Scene vectors, D3D12 objects, CLR internals, raw undo storage, or native pointers.
+The important design rule is that extensions operate through supported editor operations instead of receiving raw pointers to scene vectors, renderer objects, CLR internals, or undo storage.
 
-0.8.10 includes:
+## What the extension surface describes
 
-- versioned extension descriptors
-- duplicate/compatibility validation
-- semantic command descriptors
-- mutation / undo / Play-mode capability metadata
-- a live registry in `EditorState`
-- `Tools > Extensions` status display
-- automation capability discovery through `vespera_list_capabilities`
+The host registry can describe:
 
-The Vespera core editor registers its current automation/command surface through this registry so the API is dogfooded immediately.
+- extension identity and compatibility;
+- semantic commands;
+- whether commands mutate project state;
+- undo/Play-mode capability metadata;
+- discoverable capabilities shown through the editor/automation surface.
 
-**Not yet implemented:** loading arbitrary third-party DLLs/shared libraries. Dynamic plugin loading is deliberately deferred until the typed command surface has been stress-tested during 0.9.x. This avoids creating an unsafe plugin ABI before the semantic transaction layer stabilizes.
+The Vespera core editor itself registers its semantic command surface through this mechanism, which keeps the public transaction model exercised by normal tooling.
 
-## 0.9.0 note
+## Current boundary
 
-The extension registry remains a host contract rather than an arbitrary-DLL loader. Shipping/export and MCP continue to use semantic editor commands; dynamic plugin loading will come after 0.9 command-layer stress testing so Vespera Builder and third-party tools do not gain a privileged mutation backdoor.
+The registry is **not** a general “drop any native DLL into a Plugins folder” loader. Arbitrary third-party native module loading is intentionally outside the current production workflow.
 
-## 0.9.1 note
+If you are building tooling today, prefer the semantic editor/automation interfaces documented under **Automation / MCP** instead of depending on engine-private structures.
 
-The host registry remains intentionally load-free while the 40-tool command/automation surface is stress-tested. UI/project/asset authoring additions continue to use semantic public operations; arbitrary native DLL loading is still deferred rather than granting extensions privileged mutation access prematurely.
+## Why this matters
+
+A semantic command boundary gives tools a chance to preserve:
+
+- validation;
+- undo/redo behavior;
+- stable IDs;
+- Play/Edit mode rules;
+- error reporting;
+- future compatibility.
+
+Direct mutation of internal containers would bypass those guarantees.

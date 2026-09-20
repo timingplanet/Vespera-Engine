@@ -1,0 +1,37 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Build Vespera, create a project, open the editor, enter Play Mode, and make a standalone build."><title>Getting Started — Vespera Engine Docs</title><link rel="icon" href="assets/vespera_icon.png"><link rel="stylesheet" href="styles.css"></head><body><header class="topbar"><a class="brand" href="index.html"><img src="assets/vespera_icon.png" alt=""><span>Vespera Engine</span><b>Docs</b></a><button class="search-button" type="button" data-search-open><span>Search docs</span><kbd>Ctrl K</kbd></button></header><div class="wiki-layout"><aside class="left-rail"><div class="rail-scroll"><nav class="doc-nav" aria-label="Documentation"><div class="nav-group"><div class="nav-group-title">Start here</div><a href="index.html">Documentation Home</a><a href="getting-started.html" aria-current="page">Getting Started</a><a href="first-game.html">Your First Game</a><a href="project-structure.html">Project Structure</a><a href="file-types.html">File Types</a><a href="editor.html">Editor Guide</a></div><div class="nav-group"><div class="nav-group-title">World &amp; content</div><a href="scenes-entities.html">Scenes &amp; Entities</a><a href="prefabs.html">Prefabs</a><a href="asset-pipeline.html">Asset Pipeline</a><a href="materials-textures.html">Textures &amp; Materials</a><a href="sprites.html">Sprites &amp; Animation</a><a href="audio.html">Audio</a></div><div class="nav-group"><div class="nav-group-title">Gameplay</div><a href="input.html">Input</a><a href="managed-scripting.html">C# Scripting</a><a href="gameplay-api.html">Gameplay API</a><a href="lua-scripting.html">Lua Scripting</a></div><div class="nav-group"><div class="nav-group-title">UI &amp; 2D</div><a href="rmlui.html">RmlUi</a><a href="runtime-ui.html">Runtime UI API</a><a href="two-d-foundation.html">2D / UI Foundation</a></div><div class="nav-group"><div class="nav-group-title">Build &amp; help</div><a href="build-and-ship.html">Build &amp; Ship</a><a href="exporting.html">Exporting Reference</a><a href="troubleshooting.html">Troubleshooting</a><a href="limitations.html">Current Limitations</a></div><div class="nav-group"><div class="nav-group-title">Advanced</div><a href="scene-format.html">Scene Text Format</a><a href="extensions.html">Editor Extensions</a><a href="automation-mcp.html">Automation / MCP</a></div></nav></div></aside><main class="article-wrap"><article class="article"><div class="doc-breadcrumb"><a href="index.html">Documentation</a><span>›</span>Getting Started</div><h1 id="getting-started">Getting Started</h1>
+<p>Vespera's production-supported path is <strong>Windows x64 + Direct3D 12</strong>. Vulkan is available as a preview backend on Windows, while Linux + Vulkan remains experimental. The normal workflow is: build the engine once, use the Project Hub to create or open a project, work in the editor, test with Play Mode, then use <strong>Build → Build Game…</strong> for a standalone build.</p>
+<h2 id="what-you-need">What you need</h2>
+<p>For a source build, install:</p>
+<ul>
+<li>Visual Studio 2022 or 2026 with C++ desktop/CMake tooling.</li>
+<li>CMake. Vespera can use CMake from your PATH or the copy bundled with Visual Studio.</li>
+<li>The .NET 8+ SDK if you want C# gameplay scripting.</li>
+</ul>
+<p>Vespera's build script will warn if .NET is missing. Native engine/editor binaries can still build, but C# gameplay will not be available until .NET is installed.</p>
+<h2 id="build-the-engine">Build the engine</h2>
+<p>Open PowerShell in the Vespera source folder:</p>
+<pre><code class="language-powershell">Set-ExecutionPolicy -Scope Process Bypass
+.\build.ps1
+</code></pre>
+<p>The script configures an x64 Visual Studio CMake build and builds the editor, Project Hub, shared player, reference game, and managed scripting support.</p>
+<h2 id="open-the-project-hub">Open the Project Hub</h2>
+<pre><code class="language-powershell">.\vespera.ps1
+</code></pre>
+<p>Create one of the available starter projects:</p>
+<ul>
+<li><strong>3D / 2.5D Game</strong> — the main starter for scene-based games.</li>
+<li><strong>2D / UI Foundation (Experimental)</strong> — a screen-space game starter built around RmlUi and C#.</li>
+<li><strong>Empty Project</strong> — a minimal scene and C# bootstrap.</li>
+</ul>
+<p>The Hub creates project-owned assets and managed code. Your game does not borrow scripts from Vespera's reference project.</p>
+<h2 id="open-the-editor-and-play">Open the editor and play</h2>
+<p>Open your project from the Hub. The editor loads the project's startup scene, asset catalog, C# metadata, and project settings.</p>
+<p>Use the <strong>Play</strong> controls to enter the runtime. Play Mode uses the same project input map and gameplay code used by standalone builds. Stop returns you to your authored scene state.</p>
+<div class="notice"><strong>Good first test:</strong> create the 3D starter, press Play, move the starter actor with WASD, then Stop. That proves the project, input map, C# assembly, scene, and runtime path are all connected.</div>
+<h2 id="build-a-standalone-game">Build a standalone game</h2>
+<p>Use <strong>Build → Build Game…</strong> or press <code>Ctrl+Shift+B</code>.</p>
+<p>Choose a configuration and build. Vespera saves the project, validates the package closure, builds project C# when configured, packages the shared player and required assets, and writes the result to the project's build output directory.</p>
+<p>For a build intended for another machine, choose <strong>Portable (.NET bundled)</strong> in Project Settings if you do not want to require a compatible .NET runtime on that machine.</p>
+<h2 id="where-to-go-next">Where to go next</h2>
+<p>Read <strong>Your First Game</strong> for a small project walkthrough. Use <strong>Project Structure</strong> and <strong>File Types</strong> when you want to understand what Vespera stores on disk.</p>
+</article></main><aside class="right-rail"><div class="toc"><div class="toc-title">On this page</div><a class="h2" href="#what-you-need">What you need</a><a class="h2" href="#build-the-engine">Build the engine</a><a class="h2" href="#open-the-project-hub">Open the Project Hub</a><a class="h2" href="#open-the-editor-and-play">Open the editor and play</a><a class="h2" href="#build-a-standalone-game">Build a standalone game</a><a class="h2" href="#where-to-go-next">Where to go next</a></div></aside></div><footer class="site-footer"><span>Vespera Engine documentation</span><span>MIT License · Timingplanet</span></footer><div class="search-modal" data-search-modal hidden><div class="search-panel" role="dialog" aria-modal="true"><div class="search-row"><input data-search-input type="search" placeholder="Search Vespera documentation…" autocomplete="off"><button data-search-close>Close</button></div><div class="search-results" data-search-results></div></div></div><script src="search-index.js"></script><script src="site.js"></script></body></html>

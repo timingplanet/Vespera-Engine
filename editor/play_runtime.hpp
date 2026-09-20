@@ -53,6 +53,7 @@ public:
         const vespera::VesperaProject& project,
         vespera::AssetCatalog& assets,
         const std::filesystem::path& scene_path,
+        const std::filesystem::path& managed_directory,
         vespera::UiDocument* ui_document = nullptr,
         vespera::RmlUiSurface* rml_ui_surface = nullptr,
         vespera::RuntimePerformanceCounters* performance = nullptr);
@@ -127,6 +128,7 @@ private:
     vespera::RmlUiSurface* rml_ui_surface_ = nullptr;
     vespera::RuntimePerformanceCounters* performance_ = nullptr;
     std::filesystem::path current_scene_path_;
+    std::filesystem::path managed_directory_;
     vespera::ManagedScriptHostConfig managed_config_;
     vespera::SceneObjectId player_proxy_id_ = vespera::kInvalidSceneObjectId;
     std::size_t current_sector_ = 0;

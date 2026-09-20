@@ -1,10 +1,18 @@
+param(
+    [ValidateSet("Debug", "Release", "RelWithDebInfo")]
+    [string]$Configuration = "Debug",
+    [ValidateSet("auto", "d3d12", "vulkan", "null")]
+    [string]$Renderer = "auto",
+    [switch]$Automation
+)
+
 $ErrorActionPreference = "Stop"
 $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
-$Exe = Join-Path $Root "build\examples\reference_game\Debug\vespera_reference_game.exe"
+$Exe = Join-Path $Root "build\examples\reference_game\$Configuration\vespera_reference_game.exe"
 
 if (-not (Test-Path $Exe)) {
     Write-Host "Reference game is not built yet. Running build.ps1 first..." -ForegroundColor Yellow
-    & (Join-Path $Root "build.ps1")
+    & (Join-Path $Root "build.ps1") -Configuration $Configuration
 }
 
 # The editor writes the source project assets. CMake's POST_BUILD copy only runs
@@ -42,7 +50,9 @@ if (Test-Path $ManagedBuild) {
 $ExeName = Split-Path -Leaf $Exe
 Push-Location $ExeDir
 try {
-    & (Join-Path $ExeDir $ExeName)
+    $Args = @("--renderer", $Renderer)
+    if ($Automation) { $Args += "--automation" }
+    & (Join-Path $ExeDir $ExeName) @Args
 } finally {
     Pop-Location
 }

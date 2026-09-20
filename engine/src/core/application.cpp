@@ -11,6 +11,7 @@
 
 #include <algorithm>
 #include <chrono>
+#include <cstdlib>
 #include <exception>
 #include <format>
 #include <optional>
@@ -19,6 +20,16 @@
 
 namespace vespera {
 namespace {
+
+
+std::uint64_t smoke_frame_budget_from_environment() {
+    const char* raw = std::getenv("VESPERA_SMOKE_FRAMES");
+    if (!raw || !*raw) return 0;
+    char* end = nullptr;
+    const unsigned long long parsed = std::strtoull(raw, &end, 10);
+    if (end == raw || (end && *end != '\0')) return 0;
+    return static_cast<std::uint64_t>(parsed);
+}
 
 std::optional<Key> map_scancode(SDL_Scancode scancode) {
     switch (scancode) {
@@ -191,9 +202,21 @@ int Application::run(Game& game, const ApplicationConfig& config) {
         return 1;
     }
 
+    const RenderBackendType selected_backend = resolve_render_backend_type(config.renderer);
+    if (config.renderer != RenderBackendType::Automatic && !render_backend_compiled(config.renderer)) {
+        log::error(std::format(
+            "Requested renderer backend '{}' is not compiled into this build.",
+            render_backend_type_name(config.renderer)));
+        SDL_Quit();
+        return 1;
+    }
+
     SDL_WindowFlags flags = SDL_WINDOW_HIGH_PIXEL_DENSITY;
     if (config.resizable) {
         flags |= SDL_WINDOW_RESIZABLE;
+    }
+    if (selected_backend == RenderBackendType::Vulkan) {
+        flags |= SDL_WINDOW_VULKAN;
     }
 
     SDL_Window* window = SDL_CreateWindow(
@@ -298,7 +321,7 @@ int Application::run(Game& game, const ApplicationConfig& config) {
         input_.set_gamepad_button(GamepadButton::DpadRight, SDL_GetGamepadButton(active_gamepad, SDL_GAMEPAD_BUTTON_DPAD_RIGHT));
     };
 
-    renderer_ = create_default_render_backend();
+    renderer_ = create_render_backend(selected_backend);
     if (!renderer_ || !renderer_->initialize(window)) {
         log::error("Renderer initialization failed.");
         renderer_.reset();
@@ -309,7 +332,11 @@ int Application::run(Game& game, const ApplicationConfig& config) {
     }
 
     renderer_->set_vsync_enabled(config.vsync);
-    log::info(std::format("Renderer: {} | VSync: {}", renderer_->name(), config.vsync ? "on" : "off"));
+    log::info(std::format(
+        "Renderer: {} | backend {} | VSync: {}",
+        renderer_->name(),
+        render_backend_type_name(selected_backend),
+        config.vsync ? "on" : "off"));
 
     int pixel_width = 0;
     int pixel_height = 0;
@@ -318,6 +345,11 @@ int Application::run(Game& game, const ApplicationConfig& config) {
     }
 
     bool running = true;
+    const std::uint64_t smoke_frame_budget = smoke_frame_budget_from_environment();
+    std::uint64_t rendered_frame_count = 0;
+    if (smoke_frame_budget > 0) {
+        log::info(std::format("Smoke mode: exit automatically after {} rendered frame(s).", smoke_frame_budget));
+    }
     const auto start_time = std::chrono::steady_clock::now();
     auto previous_time = start_time;
     if (audio_.initialize()) {
@@ -481,7 +513,13 @@ int Application::run(Game& game, const ApplicationConfig& config) {
             if (renderer_->begin_frame()) {
                 renderer_->render_scene(scene_, total_seconds, nullptr, nullptr);
                 game.on_render(context, *renderer_, total_seconds);
-                renderer_->end_frame();
+                if (renderer_->end_frame()) {
+                    ++rendered_frame_count;
+                    if (smoke_frame_budget > 0 && rendered_frame_count >= smoke_frame_budget) {
+                        log::info(std::format("Smoke mode complete after {} rendered frame(s).", rendered_frame_count));
+                        running = false;
+                    }
+                }
             }
             const auto render_end = std::chrono::steady_clock::now();
             performance_.render = renderer_->frame_stats();

@@ -64,7 +64,9 @@ Write-Host "Generator: $Generator" -ForegroundColor DarkCyan
 & $CMake -S $Root -B $BuildDir -G $Generator -A x64 -DVESPERA_TESTS_ONLY=ON
 if ($LASTEXITCODE -ne 0) { throw "Vespera test configuration failed with exit code $LASTEXITCODE." }
 
-& $CMake --build $BuildDir --config $Configuration --target vespera_engine_logic_tests
+# VESPERA_TESTS_ONLY configures only the lightweight behavioral-test targets,
+# so build the complete test tree before asking CTest to run every registered test.
+& $CMake --build $BuildDir --config $Configuration
 if ($LASTEXITCODE -ne 0) { throw "Vespera test build failed with exit code $LASTEXITCODE." }
 
 $CTest = Join-Path (Split-Path -Parent $CMake) "ctest.exe"
@@ -74,14 +76,20 @@ if (-not (Test-Path $CTest)) {
 }
 if (-not (Test-Path $CTest)) { throw "ctest could not be located next to CMake or on PATH." }
 
-& $CTest --test-dir $BuildDir -C $Configuration --output-on-failure
-if ($LASTEXITCODE -ne 0) {
-    $TestExitCode = $LASTEXITCODE
+$CTestOutputLog = Join-Path $BuildDir "ctest-output.log"
+$CTestOutput = @(& $CTest --test-dir $BuildDir -C $Configuration --output-on-failure 2>&1)
+$TestExitCode = $LASTEXITCODE
+$CTestOutput | Set-Content -LiteralPath $CTestOutputLog -Encoding UTF8
+foreach ($Line in $CTestOutput) {
+    Write-Host $Line
+}
+if ($TestExitCode -ne 0) {
     $LastTestLog = Join-Path $BuildDir "Testing\Temporary\LastTest.log"
     if (Test-Path $LastTestLog) {
         Write-Host "`nCTest LastTest.log (tail):" -ForegroundColor Yellow
-        Get-Content -LiteralPath $LastTestLog -Tail 160
+        Get-Content -LiteralPath $LastTestLog -Tail 160 | ForEach-Object { Write-Host $_ }
     }
+    Write-Host "Full CTest output: $CTestOutputLog" -ForegroundColor Yellow
     throw "Vespera behavioral tests failed with exit code $TestExitCode."
 }
 
