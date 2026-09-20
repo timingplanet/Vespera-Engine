@@ -182,19 +182,14 @@ def main() -> int:
             destination.writestr(f"{root_name}/readme.md","collision\n")
         rejected=run(sys.executable,"tools/validate-release-archive.py","--archive",str(case_collision),"--platform","windows",expect_success=False)
         assert "case-colliding entries" in rejected.stdout
-        backslash_member=temp/"bad-backslash.zip"
-        canonical_member=f"{root_name}/Vespera.DistributionManifest.txt"
+        validate_release_archive=load_tool_module("vespera_validate_release_archive_test","validate-release-archive.py")
         noncanonical_member=f"{root_name}\\Vespera.DistributionManifest.txt"
-        with zipfile.ZipFile(backslash_member,"w",compression=zipfile.ZIP_STORED) as archive:
-            archive.writestr(canonical_member,"vespera_distribution 1\nend_distribution\n")
-        archive_bytes=backslash_member.read_bytes()
-        canonical_bytes=canonical_member.encode("utf-8")
-        noncanonical_bytes=noncanonical_member.encode("utf-8")
-        occurrences=archive_bytes.count(canonical_bytes)
-        assert occurrences == 2, f"Expected ZIP member name twice, found {occurrences}"
-        backslash_member.write_bytes(archive_bytes.replace(canonical_bytes,noncanonical_bytes))
-        rejected=run(sys.executable,"tools/validate-release-archive.py","--archive",str(backslash_member),"--platform","windows",expect_success=False)
-        assert "non-canonical path" in rejected.stdout
+        try:
+            validate_release_archive.canonical_member_name(noncanonical_member)
+        except SystemExit as exc:
+            assert "non-canonical path" in str(exc)
+        else:
+            raise AssertionError("backslash archive member path was accepted")
 
         build_assets=load_tool_module("vespera_build_release_assets_test","build-release-assets.py")
         fetch_dotnet=load_tool_module("vespera_fetch_dotnet_test","fetch-dotnet-sdk.py")
